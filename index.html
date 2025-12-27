@@ -1,0 +1,751 @@
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>ارسال خودکار قیمت‌ها</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 20px; direction: rtl; text-align: right; }
+    h1 { color: #2c3e50; text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
+    th { background: #3498db; color: white; }
+    .log-container { max-height: 500px; overflow-y: auto; border: 1px solid #ccc; border-radius: 8px; background: white; padding: 10px; margin-top: 20px; }
+    .success { color: #27ae60; font-weight: bold; }
+    .error { color: #e74c3c; font-weight: bold; }
+  </style>
+</head>
+<body>
+<h1>سیستم ارسال خودکار قیمت‌ها</h1>
+
+<div class="log-container">
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>زمان</th>
+        <th>سایت مرجع</th>
+        <th>خرید</th>
+        <th>فروش</th>
+        <th>پاسخ مقصد</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+  const token = 'tokenKEN253gerw75fsdgesty6udsgseev';
+  const proxyUrl = 'https://corsproxy.io/?'; // proxy برای رفع CORS
+
+  function normalizePrice(value, multiply = 1) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "string") value = value.replace(/,/g, "").trim();
+    const num = parseFloat(value);
+    return isNaN(num) ? null : num * multiply;
+  }
+
+  const apis = [
+    { name: "Zarminex.ir", company_id: 1, async fetchData() {
+      try {
+        const targetUrl = "https://api.zarminex.ir/function_url/";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: data.sell, sell: data.buy };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Goldika.ir", company_id: 2, async fetchData() {
+      try {
+        const targetUrl = "https://goldika.ir/api/public/price";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.data.price.sell), sell: normalizePrice(data.data.price.buy) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Talaeshow.com", company_id: 3, async fetchData() {
+  try {
+    const targetUrl = "https://midas.talaeshow.com/api/v1/gold/live-price?commodity_id=3&format=json";
+    const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+    const data = await res.json();
+
+    const base = data.data.buy_price.gram;
+
+    return {
+      buy: normalizePrice(base * 0.985 * 10),
+      sell: normalizePrice(base * 1.015 * 10)
+    };
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}},
+    { name: "Technogold.gold", company_id: 4, async fetchData() {
+      try {
+        const targetUrl = "https://api2.technogold.gold/customer/tradeables/only-price/1";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.results.price, 0.995 * 10), sell: normalizePrice(data.results.price, 1.005 * 10) };
+      } catch (e) { console.error(e); return null; }
+    }},
+{
+  name: "Zarpaad.com",
+  company_id: 5,
+  async fetchData() {
+    try {
+      const targetUrl = "https://app.zarpaad.com/api/getRate";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const data = await res.json();
+
+      const buyBase  = data.data.gold.buy_price;
+      const sellBase = data.data.gold.sell_price;
+
+      return {
+        buy:  normalizePrice(buyBase,  0.99* 10),
+        sell: normalizePrice(sellBase, 1.01* 10)
+      };
+
+    } catch (e) {
+      console.error("Zarpaad fetch error:", e);
+      return null;
+          }
+        }},
+    { name: "Taline.ir", company_id: 6, async fetchData() {
+      try {
+        const targetUrl = "https://price.tlyn.ir/api/v1/price";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.prices[0].price.buy, 10000), sell: normalizePrice(data.prices[0].price.sell, 10000) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Talajet.ir", company_id: 7, async fetchData() {
+      try {
+        const targetUrl = "https://api.tgju.org/v1/widget/tmp?keys=137121";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.response.indicators[0].p, 0.99), sell: normalizePrice(data.response.indicators[0].p, 1.01) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Wallgold.ir", company_id: 8, async fetchData() {
+      try {
+        const targetUrl = "https://api.wallgold.ir/api/v1/price?side=buy&symbol=GLD_18C_750TMN";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.result.price, 0.995 * 10), sell: normalizePrice(data.result.price, 1.005 * 10) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Zarafza.com", company_id: 9, async fetchData() {
+      try {
+        const targetUrl = "https://api.zarafza.com/wallets/v1/prices";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.data.G18.buy.price, 10), sell: normalizePrice(data.data.G18.sell.price, 10) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    {
+  name: "Hamrahgold.com",
+  company_id: 10,
+  async fetchData() {
+    try {
+      const targetUrl = "https://hamrahgold.com/gateway/chart/simple";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const data = await res.json();
+
+      // اطمینان از وجود آرایه list
+      if (!data || !Array.isArray(data.list) || data.list.length === 0) {
+        return null;
+      }
+
+      // آخرین رکورد واقعی (UTC یا غیر UTC فرقی ندارد)
+      const last = data.list[data.list.length - 1];
+
+      if (
+        typeof last.buy !== "number" ||
+        typeof last.sell !== "number"
+      ) {
+        return null;
+      }
+
+      return {
+        buy: last.sell,
+        sell: last.buy
+      };
+    } catch (e) {
+      console.error("Hamrahgold fetch error:", e);
+      return null;
+    }
+  }
+},
+{
+  name: "Goldnia.com",
+  company_id: 11,
+  async fetchData() {
+    try {
+      const targetUrl = "https://api.goldnia.com/api/v1/order/price";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const data = await res.json();
+
+      // اگر قیمت وجود ندارد یا نامعتبر است
+      if (!data || !data.price || Number(data.price) <= 0) {
+        return null;
+      }
+
+      const base = Number(data.price);
+
+      return {
+        buy: normalizePrice(base, 0.99),
+        sell: normalizePrice(base, 1.01)
+      };
+    } catch (e) {
+      console.error("Goldnia fetch error:", e);
+      return null;
+      }
+    }},
+    { name: "Baazar.ir", company_id: 12, async fetchData() {
+      try {
+        const targetUrl = "https://api.baazar.ir/landing/v1/price/DAILY/30";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.data.sellPrice), sell: normalizePrice(data.data.buyPrice) };
+      } catch (e) { console.error(e); return null; }
+    }},
+{ name: "Daric.gold", company_id: 13, async fetchData() {
+try {
+const targetUrl = "https://apisc.daric.gold/loan/api/v1/User/Collateral/GetGoldlPrice";
+const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+const data = await res.json();
+return { buy: normalizePrice(data.Data.BestBuyPrice * 10), sell: normalizePrice(data.Data.BestSellPrice * 10) };
+} catch (e) { console.error(e); return null; }
+}},
+    { name: "Goldis.ir", company_id: 14, async fetchData() {
+      try {
+        const targetUrl = "https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.data.final_sell_price), sell: normalizePrice(data.data.final_buy_price) };
+      } catch (e) { console.error(e); return null; }
+    }},
+      {  name: "Invi.ir",   company_id: 15,  async fetchData() {
+    try {
+      const targetUrl = "https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=1760003391&to=1760089791&currencyCode=IRR";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const data = await res.json();
+      
+      // دریافت آخرین قیمت بالا (h) به جای قیمت بسته شدن (c)
+      const base = data.h[data.h.length - 1];
+      
+      return {
+        buy: normalizePrice(base, 0.99 * 1000),
+        sell: normalizePrice(base, 1.01 * 1000)
+      };
+    } catch (e) {
+      console.error("invi.ir fetch error:", e);
+      return null;
+      }
+    }},
+{
+  name: "MelliGold",
+  company_id: 16,
+  async fetchData() {
+    try {
+      const targetUrl = "https://melligold.com/api/v1/exchange/buy-sell-price/";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const data = await res.json();
+
+      const buyBase  = data.data.price_buy;
+      const sellBase = data.data.price_sell;
+
+      return {
+        buy: normalizePrice(buyBase * 0.995 * 10),
+        sell: normalizePrice(sellBase * 1.005 * 10)
+      };
+
+    } catch (e) {
+      console.error("melligold fetch error:", e);
+      return null;
+    }
+  }},
+    { name: "Milli.gold", company_id: 17, async fetchData() {
+      try {
+        const targetUrl = "https://milli.gold/api/v1/public/milli-price/external";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.data.price18, 0.995 * 1000), sell: normalizePrice(data.data.price18, 1.005 * 1000) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Talano.ir", company_id: 18, async fetchData() {
+      try {
+        const targetUrl = "https://service.talano.ir/api/v1/market/price/";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.sellPrice, 10000), sell: normalizePrice(data.buyPrice, 10000) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Digikala.com/wealth", company_id: 19, async fetchData() {
+      try {
+        const targetUrl = "https://api.digikala.com/non-inventory/v1/prices/";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.gold18.price, 0.995 * 1000), sell: normalizePrice(data.gold18.price, 1.005 * 1000) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Zarinex.io", company_id: 20, async fetchData() {
+      try {
+        const targetUrl = "https://api.zarinex.io/wallets/v1/prices";
+        const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const data = await res.json();
+        return { buy: normalizePrice(data.data.G18.buy.instant, 10), sell: normalizePrice(data.data.G18.sell.instant, 10) };
+      } catch (e) { console.error(e); return null; }
+    }},
+    {
+  name: "Zarpay24",
+  company_id: 21,
+  async fetchData() {
+    try {
+      const targetUrl = "https://zarpay24.com/market/coins/?format=json";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const data = await res.json();
+
+      const gold = data.find(i => i.symbol === "GOLD");
+      if (!gold) return null;
+
+      const buyBase = Number(gold.buy_price);
+      const sellBase = Number(gold.sell_price);
+
+      return {
+        buy: normalizePrice(buyBase * 0.99 * 10),
+        sell: normalizePrice(sellBase * 1.005 * 10)
+      };
+        } catch (e) { console.error(e); return null; }
+    }},
+{   name: "Zaryaalgold.com", 
+  company_id: 22, 
+  async fetchData() {
+    try {
+      const targetUrl = "http://et.tala.ir/webservice/zaryaalgold.com/6397fff8333f099bb55cd539f865abbb";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const data = await res.json();
+      
+      const base = data.geram18.value;       // قیمت پایه برای ۱۰۰۰ سوت (۱ گرم)
+      const oneSotValue = base / 1000;       // ارزش تقریبی ۱ سوت
+
+      return { 
+        buy:  normalizePrice(base, 1),                           // دقیقاً قیمت پایه بدون تغییر
+        sell: normalizePrice(base * 1.005 + oneSotValue, 1)      // +۰.۵٪ + ارزش ۱ سوت
+      };
+      } catch (e) { console.error(e); return null; }
+    }},
+    {
+  name: "Tokeniko.com",
+  company_id: 24,
+  async fetchData() {
+    try {
+      const targetUrl = "https://apigateway.tokeniko.com/shop/api/Category/Tradeables";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      if (!res.ok) {
+        throw new Error(`Tokeniko: HTTP ${res.status} - ${res.statusText}`);
+      }
+
+      const data = await res.json();
+
+      // پیدا کردن آیتم طلای آبشده ۱۸ عیار (gold-750) - fallbackهای قوی
+      const goldItem = data?.Model?.find(item =>
+        item.Name === "gold-750" ||
+        (item.Title && item.Title.includes("طلای آبشده ۱۸")) ||
+        (item.Name && item.Name.includes("750"))
+      );
+
+      if (!goldItem) {
+        console.warn("Tokeniko: آیتم gold-750 یافت نشد");
+        return null;
+      }
+
+      // استخراج قیمت‌ها (Number امن‌تر از parseInt)
+      const rawBuy  = Number(goldItem.PurchasePrice);
+      const rawSell = Number(goldItem.SellPrice);
+
+      // اعتبارسنجی قوی (برای بازار طلا حیاتیه)
+      if (
+        isNaN(rawBuy) || isNaN(rawSell) ||
+        rawBuy <= 0 || rawSell <= 0 ||
+        rawBuy > rawSell * 1.05 || rawSell > rawBuy * 1.05 // حداکثر ۵٪ اختلاف مجاز
+      ) {
+        console.warn(`Tokeniko: قیمت نامعتبر - خرید خام: ${rawBuy}, فروش خام: ${rawSell}`);
+        return null;
+      }
+
+      // اعمال تنظیم ۰.۷۵٪ (طبق توضیح خودت)
+      // خرید از مشتری: ۰.۷۵٪ کسر (به نفع صرافی)
+      // فروش به مشتری: ۰.۷۵٪ اضافه (به نفع صرافی)
+      const adjustedBuy  = Math.round(rawBuy  * 0.9925); // -0.75%
+      const adjustedSell = Math.round(rawSell * 1.0075); // +0.75%
+
+      return {
+        buy: adjustedBuy,
+        sell: adjustedSell,
+        timestamp: new Date().toISOString(),
+        rawBuy,   // برای لاگ و دیباگ
+        rawSell
+      };
+    } catch (e) {
+      console.error("Tokeniko fetch error:", e.message || e);
+      return null;
+    }
+  }
+},
+{
+  name: "BazareTala.com",
+  company_id: 25,
+
+  async fetchData() {
+    try {
+      const targetUrl = "https://bazaretala.com/melted-gold-bar";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`BazareTala: HTTP ${res.status} - ${res.statusText}`);
+      }
+
+      const html = await res.text();
+
+      // استخراج قیمت‌ها با Regex مقاوم
+      const buyMatch  = html.match(/class="goldBuyPrice"[^>]*>[\s\S]*?>?([\d,]+)</i);
+      const sellMatch = html.match(/class="goldSellPrice"[^>]*>[\s\S]*?>?([\d,]+)</i);
+
+      if (!buyMatch || !sellMatch) {
+        console.warn("BazareTala: HTML snippet for debugging:", html.substring(0, 2000));
+        return null;
+      }
+
+      const baseBuy  = Number(buyMatch[1].replace(/,/g, ""));
+      const baseSell = Number(sellMatch[1].replace(/,/g, ""));
+
+      if (!baseBuy || !baseSell || baseBuy <= 0 || baseSell <= 0) {
+        return null;
+      }
+
+      // تابع normalizePrice فرض شده در پروژه شما
+      return {
+        buy: normalizePrice(baseBuy, 1 * 10),   // ضرب ×10، بدون تغییر درصد
+        sell: normalizePrice(baseSell, 1 * 10)  // ضرب ×10، بدون تغییر درصد
+      };
+
+    } catch (e) {
+      console.error("BazareTala fetch error:", e);
+      return null;
+    }
+  }
+},
+{
+  name: "Talasea.ir",
+  company_id: 26,
+  async fetchData() {
+    try {
+      const targetUrl = "https://api.talasea.ir/api/market/getGoldPrice";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      if (!res.ok) throw new Error(`Talasea: HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      // استخراج قیمت پایه (به تومان)
+      const basePriceStr = data.price;
+      if (!basePriceStr || isNaN(basePriceStr)) {
+        console.warn("Talasea: قیمت پایه نامعتبر");
+        return null;
+      }
+
+      const basePriceToman = Number(basePriceStr); // مثلاً 14680 تومان
+
+      // اعتبارسنجی (برای بازار طلا مهم)
+      if (basePriceToman <= 0 || basePriceToman > 50000) {
+        console.warn(`Talasea: قیمت پایه خارج از رنج - ${basePriceToman} تومان`);
+        return null;
+      }
+
+      // تبدیل به ریال (ضرب در ۱۰۰۰۰)
+      const basePriceRial = basePriceToman * 10000;
+
+      // اعمال ۱٪ کارمزد (مارجین)
+      // خرید از مشتری: +۱٪ (به نفع صرافی)
+      // فروش به مشتری: -۱٪ (به نفع صرافی)
+      const buyPriceRial = Math.round(basePriceRial * 1.01);
+      const sellPriceRial = Math.round(basePriceRial * 0.99);
+
+      return {
+        buy: buyPriceRial,
+        sell: sellPriceRial
+      };
+    } catch (e) {
+      console.error("Talasea fetch error:", e);
+      return null;
+    }
+  }
+},
+{
+  name: "Talapp.ir",
+  company_id: 27,
+
+  async fetchData() {
+    try {
+      const targetUrl = "https://talapp.ir/";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`Talapp: HTTP ${res.status}`);
+      }
+
+      const html = await res.text();
+
+      // استخراج آبجکت قیمت از داخل script
+      const match = html.match(
+        /var\s+goldPriceData\s*=\s*(\{[\s\S]*?\});/i
+      );
+
+      if (!match) {
+        console.warn("Talapp: goldPriceData not found");
+        return null;
+      }
+
+      const goldPriceData = JSON.parse(match[1]);
+
+      const baseBuy  = Number(goldPriceData?.result?.buy_gold);
+      const baseSell = Number(goldPriceData?.result?.sell_gold);
+
+      if (!baseBuy || !baseSell || baseBuy <= 0 || baseSell <= 0) {
+        return null;
+      }
+
+      // ±۰.۴۵٪
+      const buyFactor  = 1 - 0.0045;
+      const sellFactor = 1 + 0.0045;
+
+      // اعمال درصد + ضرب ×10
+      return {
+        buy:  Math.round(baseBuy  * buyFactor  * 10),
+        sell: Math.round(baseSell * sellFactor * 10)
+      };
+
+    } catch (e) {
+      console.error("Talapp fetch error:", e);
+      return null;
+    }
+  }
+},
+{
+  name: "igolden.ir",
+  company_id: 28,
+  async fetchData() {
+    try {
+      const targetUrl = "https://api.tgju.org/v1/widget/tmp?keys=137121";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      if (!res.ok) throw new Error(`igolden: HTTP ${res.status} - ${res.statusText}`);
+
+      const data = await res.json();
+
+      // استخراج قیمت پایه (به ریال)
+      const basePriceRialStr = data?.response?.indicators?.[0]?.p;
+      if (!basePriceRialStr || isNaN(basePriceRialStr)) {
+        console.warn("igolden: قیمت پایه یافت نشد یا نامعتبر");
+        console.log("Available keys:", Object.keys(data?.response?.indicators?.[0] || {}));
+        return null;
+      }
+
+      const basePriceRial = Number(basePriceRialStr); // مثلاً 143573000 ریال
+
+      // اعتبارسنجی قوی (برای بازار طلا حیاتی)
+      if (basePriceRial <= 0 || basePriceRial < 100000000 || basePriceRial > 300000000) {
+        console.warn(`igolden: قیمت پایه خارج از رنج - ${basePriceRial} ریال`);
+        return null;
+      }
+
+      // تبدیل به تومان (تقسیم بر ۱۰)
+      const basePriceToman = basePriceRial // مثلاً 14357300 تومان
+
+      // اعمال ۱٪ کارمزد (مارجین)
+      // خرید از مشتری: -۱٪ (ارزان‌تر خریدن)
+      // فروش به مشتری: +۱٪ (گران‌تر فروختن)
+      const buyPriceToman = Math.round(basePriceToman * 0.99);
+      const sellPriceToman = Math.round(basePriceToman * 1.01);
+
+      // اعتبارسنجی نهایی
+      if (buyPriceToman <= 0 || sellPriceToman <= 0 || sellPriceToman <= buyPriceToman) {
+        console.warn(`igolden: قیمت نهایی نامعتبر - خرید: ${buyPriceToman}, فروش: ${sellPriceToman}`);
+        return null;
+      }
+
+      // لاگ دیباگ (برای تست)
+      console.log("igolden - Base:", basePriceToman, "Buy:", buyPriceToman, "Sell:", sellPriceToman);
+
+      return {
+        buy: buyPriceToman,
+        sell: sellPriceToman,
+        timestamp: new Date().toISOString()
+      };
+    } catch (e) {
+      console.error("igolden fetch error:", e.message || e);
+      return null;
+    }
+  }
+},
+{
+  name: "goldenfa.ir",
+  company_id: 29,
+  async fetchData() {
+    try {
+      const targetUrl = "https://api.goldenfa.ir/v1/market/ticker";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      if (!res.ok) throw new Error(`goldenfa: HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      // پیدا کردن آیتم طلای ۱۸ عیار
+      const gram18 = data?.data?.find(item => item.symbol === "gram18");
+      if (!gram18 || !gram18.close || isNaN(gram18.close)) {
+        console.warn("goldenfa: gram18 price not found");
+        return null;
+      }
+
+      const basePriceToman = Number(gram18.close); // قیمت پایه به تومان
+
+      // اعتبارسنجی (برای بازار طلا)
+      if (basePriceToman <= 0 || basePriceToman < 10000000 || basePriceToman > 30000000) {
+        console.warn(`goldenfa: قیمت پایه خارج از رنج - ${basePriceToman} تومان`);
+        return null;
+      }
+
+      // تبدیل به ریال (ضرب در ۱۰)
+      const basePriceRial = basePriceToman * 10;
+
+      // اعمال ۱٪ کارمزد (مثل بقیه سایت‌ها)
+      // خرید از مشتری: +۱٪ (گران‌تر خریدن)
+      // فروش به مشتری: -۱٪ (ارزان‌تر فروختن)
+      const buyPriceRial  = Math.round(basePriceRial * 1.01);
+      const sellPriceRial = Math.round(basePriceRial * 0.99);
+
+      return {
+        buy: buyPriceRial,
+        sell: sellPriceRial
+      };
+    } catch (e) {
+      console.error("goldenfa fetch error:", e);
+      return null;
+    }
+  }
+},
+{
+  name: "Irantt.ir",
+  company_id: 30,
+  async fetchData() {
+    try {
+      const targetUrl = "https://www.tala.ir/banner/?ids=geram18";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      
+      if (!res.ok) throw new Error(`tala.ir: HTTP ${res.status}`);
+
+      const data = await res.json();
+      
+      // استخراج قیمت طلای ۱۸ عیار
+      const geram18Str = data?.price?.geram18;
+      
+      if (!geram18Str) {
+        console.warn("tala.ir: قیمت geram18 یافت نشد");
+        console.log("داده دریافتی:", JSON.stringify(data, null, 2));
+        return null;
+      }
+
+      // تبدیل به عدد (حذف کاماها)
+      const baseToman = Number(geram18Str.replace(/,/g, ''));
+
+      // اعتبارسنجی قیمت طلای ۱۸ عیار
+      if (isNaN(baseToman) || baseToman < 10000000 || baseToman > 30000000) {
+        console.warn(`tala.ir: قیمت نامعتبر - ${baseToman.toLocaleString()}`);
+        return null;
+      }
+
+      // محاسبه با کارمزد ۱٪
+      const MARGIN = 0.01; // 1%
+      
+      // خرید از مشتری: قیمت پایه منهای ۱٪
+      const buyToman = Math.round(baseToman * (1 - MARGIN));
+      
+      // فروش به مشتری: قیمت پایه به علاوه ۱٪
+      const sellToman = Math.round(baseToman * (1 + MARGIN));
+
+      // تبدیل تومان به ریال (ضرب در ۱۰)
+      const buyRial = buyToman * 10;
+      const sellRial = sellToman * 10;
+
+      // لاگ برای بررسی
+      console.log(`tala.ir: پایه=${baseToman.toLocaleString()}, خرید=${buyToman.toLocaleString()}, فروش=${sellToman.toLocaleString()}`);
+
+      return {
+        buy: buyRial,
+        sell: sellRial
+      };
+      
+    } catch (e) {
+      console.error("tala.ir fetch error:", e.message);
+      return null;
+    }
+  }
+},
+
+  ];
+
+  async function sendToDestination(company_id, buy, sell, token) {
+    try {
+      const res = await fetch("https://zarsaman.ir/admin/zar.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ company_id, buy, sell, token })
+      });
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    } catch (err) {
+      return "خطا در ارسال: " + err.message;
+    }
+  }
+
+  function logResult(site, buy, sell, response) {
+    const tbody = document.querySelector("#logTable tbody");
+    const tr = document.createElement("tr");
+    const now = new Date().toLocaleString('fa-IR');
+    const status = response?.status === 'success' ? 'success' : 'error';
+    tr.innerHTML = `
+      <td>${now}</td>
+      <td>${site}</td>
+      <td>${buy ? buy.toLocaleString('fa-IR') : "-"}</td>
+      <td>${sell ? sell.toLocaleString('fa-IR') : "-"}</td>
+      <td class="${status}">${response?.message || response || 'نامشخص'}</td>
+    `;
+    tbody.prepend(tr);
+  }
+
+  async function runTask() {
+    for (let api of apis) {
+      const result = await api.fetchData();
+      if (result) {
+        const response = await sendToDestination(api.company_id, result.buy, result.sell, token);
+        logResult(api.name, result.buy, result.sell, response);
+      } else {
+        logResult(api.name, null, null, "خطا در دریافت داده");
+      }
+    }
+  }
+
+  // اجرای اولیه و تکرار هر ۶۰ ثانیه
+  runTask();
+  setInterval(runTask, 60000);
+</script>
+</body>
+</html>
