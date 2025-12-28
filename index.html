@@ -695,6 +695,176 @@ return { buy: normalizePrice(data.Data.BestBuyPrice * 10), sell: normalizePrice(
     }
   }
 },
+{
+  name: "zarline.app",
+  company_id: 31,
+  async fetchData() {
+    try {
+      const targetUrl = "https://api.zarline.app/core/v1/markets/N2K1LGxd8B/price";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      if (!res.ok) throw new Error(`zarline: HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      // استخراج قیمت پایه (تومان)
+      const basePriceToman = data?.data?.price;
+      if (!basePriceToman || isNaN(basePriceToman)) {
+        console.warn("zarline: قیمت پایه یافت نشد یا نامعتبر");
+        return null;
+      }
+
+      // اعتبارسنجی (برای بازار طلا)
+      if (basePriceToman <= 0 || basePriceToman < 10000000 || basePriceToman > 30000000) {
+        console.warn(`zarline: قیمت پایه خارج از رنج - ${basePriceToman} تومان`);
+        return null;
+      }
+
+      // تبدیل به ریال (ضرب در ۱۰)
+      const basePriceRial = basePriceToman * 10;
+
+      // اعمال ۰.۵٪ کارمزد (مارجین)
+      // خرید از مشتری: -۰.۵٪ (ارزان‌تر خریدن)
+      // فروش به مشتری: +۰.۵٪ (گران‌تر فروختن)
+      const buyPriceRial  = Math.round(basePriceRial * 0.995);
+      const sellPriceRial = Math.round(basePriceRial * 1.005);
+
+      return {
+        buy: buyPriceRial,
+        sell: sellPriceRial
+      };
+    } catch (e) {
+      console.error("zarline fetch error:", e);
+      return null;
+    }
+  }
+},
+{
+  name: "zarniv.ir",
+  company_id: 32,
+  async fetchData() {
+    try {
+      const targetUrl = "https://trade.zarniv.ir/apiprice/10";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl)); // از proxyUrl اصلی پروژه استفاده کن
+      if (!res.ok) throw new Error(`zarniv: HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      // چک وجود prices و حداقل یک عنصر
+      if (!data?.prices || !Array.isArray(data.prices) || data.prices.length === 0) {
+        console.warn("zarniv: prices یافت نشد یا خالی است");
+        return null;
+      }
+
+      // آخرین قیمت (اولین عنصر آرایه prices)
+      const latest = data.prices[0];
+
+      // چک وجود Geram18
+      const baseTomanStr = latest?.Geram18;
+      if (!baseTomanStr || isNaN(baseTomanStr)) {
+        console.warn("zarniv: Geram18 یافت نشد یا نامعتبر");
+        return null;
+      }
+
+      const baseToman = Number(baseTomanStr); // قیمت پایه به تومان
+
+      // اعتبارسنجی بازار طلا (رنج منطقی سال ۱۴۰۴)
+      if (baseToman <= 0 || baseToman < 10000000 || baseToman > 30000000) {
+        console.warn(`zarniv: قیمت پایه خارج از رنج - ${baseToman} تومان`);
+        return null;
+      }
+
+      // کارمزد ۱٪ (مارجین)
+      const MARGIN = 0.01; // 1%
+
+      // خرید از مشتری: -۱٪ (ارزان‌تر خریدن به نفع صرافی)
+      const buyToman = Math.round(baseToman * (1 - MARGIN));
+
+      // فروش به مشتری: +۱٪ (گران‌تر فروختن به نفع صرافی)
+      const sellToman = Math.round(baseToman * (1 + MARGIN));
+
+      // تبدیل به ریال (ضرب در ۱۰)
+      const buyRial  = Math.round(buyToman * 10);
+      const sellRial = Math.round(sellToman * 10);
+
+      // اعتبارسنجی نهایی
+      if (buyRial <= 0 || sellRial <= 0 || buyRial > sellRial) {
+        console.warn(`zarniv: قیمت نهایی نامعتبر - خرید: ${buyRial}, فروش: ${sellRial}`);
+        return null;
+      }
+
+      return {
+        buy: buyRial,
+        sell: sellRial
+      };
+    } catch (e) {
+      console.error("zarniv fetch error:", e.message || e);
+      return null;
+    }
+  }
+},
+{
+  name: "panahcoin.com",
+  company_id: 33,
+  async fetchData() {
+    try {
+      const targetUrl = "https://www.panahcoin.com/rates/";
+      const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      if (!res.ok) throw new Error(`panahcoin: HTTP ${res.status} - ${res.statusText}`);
+
+      const html = await res.text();
+
+      // 1️⃣ پیدا کردن ردیف طلای ۱۸ عیار (regex مقاوم‌تر با فاصله‌های اختیاری)
+      const rowMatch = html.match(
+        /<td[^>]*>\s*طلای\s*(?:18|هجده)\s*عیار\s*<\/td>[\s\S]*?<\/tr>/i
+      );
+
+      if (!rowMatch) {
+        console.warn("panahcoin: ردیف 'طلای ۱۸ عیار' پیدا نشد");
+        console.log("HTML snippet (اول ۲۰۰۰ کاراکتر):", html.substring(0, 2000)); // برای دیباگ
+        return null;
+      }
+
+      const rowHtml = rowMatch[0];
+
+      // 2️⃣ استخراج تمام قیمت‌ها از ردیف (معمولاً خرید و فروش)
+      const priceMatches = rowHtml.matchAll(/shortcode_price'?>\s*([\d,]+)\s*</g);
+      const prices = Array.from(priceMatches, m => m[1]);
+
+      if (prices.length < 2) {
+        console.warn("panahcoin: تعداد قیمت‌ها کمتر از ۲ تا است");
+        console.log("قیمت‌های استخراج‌شده:", prices);
+        return null;
+      }
+
+      // فرض: اولین قیمت = خرید، دومین = فروش (اگر ترتیب برعکس بود، عوض کن)
+      const buyToman  = Number(prices[0].replace(/,/g, ""));
+      const sellToman = Number(prices[1].replace(/,/g, ""));
+
+      // 3️⃣ اعتبارسنجی حرفه‌ای بازار طلا
+      if (
+        isNaN(buyToman) || isNaN(sellToman) ||
+        buyToman <= 0 || sellToman <= 0 ||
+        buyToman > sellToman || // خرید نباید بیشتر از فروش باشه
+        sellToman > buyToman * 1.1 // اختلاف بیش از ۱۰٪ غیرعادی
+      ) {
+        console.warn(`panahcoin: قیمت نامعتبر - خرید: ${buyToman}, فروش: ${sellToman}`);
+        return null;
+      }
+
+      // 4️⃣ تبدیل به ریال (×10) + گرد کردن
+      const buyRial  = Math.round(buyToman * 10);
+      const sellRial = Math.round(sellToman * 10);
+
+      return {
+        buy: buyRial,
+        sell: sellRial
+      };
+    } catch (e) {
+      console.error("panahcoin fetch error:", e.message || e);
+      return null;
+    }
+  }
+},
 
   ];
 
@@ -745,8 +915,7 @@ return { buy: normalizePrice(data.Data.BestBuyPrice * 10), sell: normalizePrice(
 
   // اجرای اولیه و تکرار هر ۶۰ ثانیه
   runTask();
-  setInterval(runTask, 20000);
+  setInterval(runTask, 60000);
 </script>
 </body>
-
 </html>
