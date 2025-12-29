@@ -115,8 +115,8 @@
         const data = await res.json();
         const base = data.data.buy_price.gram;
         const result = {
-          buy: normalizePrice(base * 0.985),
-          sell: normalizePrice(base * 1.015)
+          buy: normalizePrice(base * 0.985  * 10),
+          sell: normalizePrice(base * 1.015 * 10)
         };
         setCachedPrice("Talaeshow.com", result);
         return result;
@@ -131,8 +131,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.results.price, 0.995),
-          sell: normalizePrice(data.results.price, 1.005)
+          buy: normalizePrice(data.results.price, 0.995 * 10),
+          sell: normalizePrice(data.results.price, 1.005 * 10)
         };
         setCachedPrice("Technogold.gold", result);
         return result;
@@ -147,8 +147,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.gold.buy_price, 0.99),
-          sell: normalizePrice(data.data.gold.sell_price, 1.01)
+          buy: normalizePrice(data.data.gold.buy_price, 0.99 * 10),
+          sell: normalizePrice(data.data.gold.sell_price, 1.01 * 10)
         };
         setCachedPrice("Zarpaad.com", result);
         return result;
@@ -163,8 +163,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.prices[0].price.buy),
-          sell: normalizePrice(data.prices[0].price.sell)
+          buy: normalizePrice(data.prices[0].price.buy  * 10000),
+          sell: normalizePrice(data.prices[0].price.sell  * 10000)
         };
         setCachedPrice("Taline.ir", result);
         return result;
@@ -195,8 +195,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.result.price, 0.995),
-          sell: normalizePrice(data.result.price, 1.005)
+          buy: normalizePrice(data.result.price, 0.995 * 10),
+          sell: normalizePrice(data.result.price, 1.005 * 10)
         };
         setCachedPrice("Wallgold.ir", result);
         return result;
@@ -211,8 +211,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.G18.buy.price),
-          sell: normalizePrice(data.data.G18.sell.price)
+          buy: normalizePrice(data.data.G18.buy.price * 10),
+          sell: normalizePrice(data.data.G18.sell.price * 10)
         };
         setCachedPrice("Zarafza.com", result);
         return result;
@@ -273,8 +273,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.Data.BestBuyPrice),
-          sell: normalizePrice(data.Data.BestSellPrice)
+          buy: normalizePrice(data.Data.BestBuyPrice * 10),
+          sell: normalizePrice(data.Data.BestSellPrice * 10)
         };
         setCachedPrice("Daric.gold", result);
         return result;
@@ -306,8 +306,8 @@
         const data = await res.json();
         const base = data.h[data.h.length - 1];
         const result = {
-          buy: normalizePrice(base, 0.99 * 100),
-          sell: normalizePrice(base, 1.01 * 100)
+          buy: normalizePrice(base, 0.99 * 1000),
+          sell: normalizePrice(base, 1.01 * 1000)
         };
         setCachedPrice("Invi.ir", result);
         return result;
@@ -322,8 +322,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.price_buy, 0.995),
-          sell: normalizePrice(data.data.price_sell, 1.005)
+          buy: normalizePrice(data.data.price_buy, 0.995 * 10),
+          sell: normalizePrice(data.data.price_sell, 1.005 * 10)
         };
         setCachedPrice("MelliGold", result);
         return result;
@@ -338,8 +338,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.price18, 0.995 * 100),
-          sell: normalizePrice(data.data.price18, 1.005 * 100)
+          buy: normalizePrice(data.data.price18, 0.995 * 1000),
+          sell: normalizePrice(data.data.price18, 1.005 * 1000)
         };
         setCachedPrice("Milli.gold", result);
         return result;
