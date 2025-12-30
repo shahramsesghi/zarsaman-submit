@@ -518,8 +518,8 @@
         if (!basePriceRialStr || isNaN(basePriceRialStr)) return null;
         const basePriceToman = Number(basePriceRialStr) / 10;
         const result = {
-          buy: Math.round(basePriceToman * 0.99),
-          sell: Math.round(basePriceToman * 1.01)
+          buy: Math.round(basePriceToman * 0.99 * 10),
+          sell: Math.round(basePriceToman * 1.01 * 10)
         };
         setCachedPrice("igolden.ir", result);
         return result;
