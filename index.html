@@ -115,8 +115,8 @@
         const data = await res.json();
         const base = data.data.buy_price.gram;
         const result = {
-          buy: normalizePrice(base * 0.985  * 10),
-          sell: normalizePrice(base * 1.015 * 10)
+          buy: normalizePrice(base * 0.985),
+          sell: normalizePrice(base * 1.015)
         };
         setCachedPrice("Talaeshow.com", result);
         return result;
@@ -131,8 +131,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.results.price, 0.995 * 10),
-          sell: normalizePrice(data.results.price, 1.005 * 10)
+          buy: normalizePrice(data.results.price, 0.995),
+          sell: normalizePrice(data.results.price, 1.005)
         };
         setCachedPrice("Technogold.gold", result);
         return result;
@@ -147,8 +147,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.gold.buy_price, 0.99 * 10),
-          sell: normalizePrice(data.data.gold.sell_price, 1.01 * 10)
+          buy: normalizePrice(data.data.gold.buy_price, 0.99),
+          sell: normalizePrice(data.data.gold.sell_price, 1.01)
         };
         setCachedPrice("Zarpaad.com", result);
         return result;
@@ -163,8 +163,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.prices[0].price.buy  * 10000),
-          sell: normalizePrice(data.prices[0].price.sell  * 10000)
+          buy: normalizePrice(data.prices[0].price.buy  * 1000),
+          sell: normalizePrice(data.prices[0].price.sell  * 1000)
         };
         setCachedPrice("Taline.ir", result);
         return result;
@@ -195,8 +195,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.result.price, 0.995 * 10),
-          sell: normalizePrice(data.result.price, 1.005 * 10)
+          buy: normalizePrice(data.result.price, 0.995),
+          sell: normalizePrice(data.result.price, 1.005)
         };
         setCachedPrice("Wallgold.ir", result);
         return result;
@@ -211,8 +211,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.G18.buy.price * 10),
-          sell: normalizePrice(data.data.G18.sell.price * 10)
+          buy: normalizePrice(data.data.G18.buy.price ),
+          sell: normalizePrice(data.data.G18.sell.price )
         };
         setCachedPrice("Zarafza.com", result);
         return result;
@@ -244,8 +244,8 @@
         if (!data || !data.price || Number(data.price) <= 0) return null;
         const base = Number(data.price);
         const result = {
-          buy: normalizePrice(base, 0.99),
-          sell: normalizePrice(base, 1.01)
+          buy: normalizePrice(base, 0.99 * 0.1),
+          sell: normalizePrice(base, 1.01 * 0.1)
         };
         setCachedPrice("Goldnia.com", result);
         return result;
@@ -259,7 +259,7 @@
         const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.baazar.ir/landing/v1/price/DAILY/30"));
         if (!res) return null;
         const data = await res.json();
-        const result = { buy: normalizePrice(data.data.sellPrice), sell: normalizePrice(data.data.buyPrice) };
+        const result = { buy: normalizePrice(data.data.sellPrice* 0.1), sell: normalizePrice(data.data.buyPrice* 0.1) };
         setCachedPrice("Baazar.ir", result);
         return result;
       } catch (e) { console.error(JSON.stringify(e, null, 2)); return null; }
@@ -273,8 +273,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.Data.BestBuyPrice * 10),
-          sell: normalizePrice(data.Data.BestSellPrice * 10)
+          buy: normalizePrice(data.Data.BestBuyPrice* 0.1),
+          sell: normalizePrice(data.Data.BestSellPrice* 0.1)
         };
         setCachedPrice("Daric.gold", result);
         return result;
@@ -289,8 +289,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.final_sell_price),
-          sell: normalizePrice(data.data.final_buy_price)
+          buy: normalizePrice(data.data.final_sell_price* 0.1),
+          sell: normalizePrice(data.data.final_buy_price* 0.1)
         };
         setCachedPrice("Goldis.ir", result);
         return result;
@@ -306,8 +306,8 @@
         const data = await res.json();
         const base = data.h[data.h.length - 1];
         const result = {
-          buy: normalizePrice(base, 0.99 * 1000),
-          sell: normalizePrice(base, 1.01 * 1000)
+          buy: normalizePrice(base, 0.99 * 100),
+          sell: normalizePrice(base, 1.01 * 100)
         };
         setCachedPrice("Invi.ir", result);
         return result;
@@ -322,8 +322,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.price_buy, 0.995 * 10),
-          sell: normalizePrice(data.data.price_sell, 1.005 * 10)
+          buy: normalizePrice(data.data.price_buy, 0.995),
+          sell: normalizePrice(data.data.price_sell, 1.005)
         };
         setCachedPrice("MelliGold", result);
         return result;
@@ -338,8 +338,8 @@
         if (!res) return null;
         const data = await res.json();
         const result = {
-          buy: normalizePrice(data.data.price18, 0.995 * 1000),
-          sell: normalizePrice(data.data.price18, 1.005 * 1000)
+          buy: normalizePrice(data.data.price18, 0.995 * 100),
+          sell: normalizePrice(data.data.price18, 1.005 * 100)
         };
         setCachedPrice("Milli.gold", result);
         return result;
@@ -516,10 +516,10 @@
         const data = await res.json();
         const basePriceRialStr = data?.response?.indicators?.[0]?.p;
         if (!basePriceRialStr || isNaN(basePriceRialStr)) return null;
-        const basePriceToman = Number(basePriceRialStr) / 10;
+        const basePriceToman = Number(basePriceRialStr);
         const result = {
-          buy: Math.round(basePriceToman * 0.99 * 10),
-          sell: Math.round(basePriceToman * 1.01 * 10)
+          buy: Math.round(basePriceToman * 0.99 * 0.1),
+          sell: Math.round(basePriceToman * 1.01 * 0.1)
         };
         setCachedPrice("igolden.ir", result);
         return result;
