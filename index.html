@@ -10,7 +10,7 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
     th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
     th { background: #3498db; color: white; }
-    .log-container { max-height: 500px; overflow-y: auto; border: 1px solid #ccc; border-radius: 8px; background: white; padding: 10px; margin-top: 20px; }
+    .log-container { max-height: 500px; overflow-y auto; border: 1px solid #ccc; border-radius: 8px; background: white; padding: 10px; margin-top: 20px; }
     .success { color: #27ae60; font-weight: bold; }
     .error { color: #e74c3c; font-weight: bold; }
   </style>
@@ -32,7 +32,9 @@
   </table>
 </div>
 <script>
-  const token = 'tokenKEN253gerw75fsdgesty6udsgseev';
+  // 🔒 توکن‌های امنیتی
+  const token = 'tokenKEN253gerw75fsdgesty6udsgseev'; // توکن قدیمی (برای سازگاری)
+  const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی جدید
   const proxyUrl = 'https://corsproxy.io/?';
 
   function normalizePrice(value, multiply = 1) {
@@ -224,7 +226,7 @@
         const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://apisc.daric.gold/loan/api/v1/User/Collateral/GetGoldlPrice"));
         if (!res) return null;
         const data = await res.json();
-        const result = { buy: normalizePrice(data.Data.BestBuyPrice * 10), sell: normalizePrice(data.Data.BestSellPrice * 10) }; // ضرب در ۱۰ برای فیکس قیمت پایین
+        const result = { buy: normalizePrice(data.Data.BestBuyPrice * 10), sell: normalizePrice(data.Data.BestSellPrice * 10) };
         setCachedPrice("Daric.gold", result);
         return result;
       } catch (e) { console.error(e); return null; }
@@ -366,9 +368,8 @@
     const buyMatch = html.match(/خرید هر گرم طلا از ما\s*([\d,]+)/i);
     const sellMatch = html.match(/فروش هر گرم طلا به ما\s*([\d,]+)/i);
     if (!buyMatch || !sellMatch) return null;
-    // قیمت‌ها مستقیماً به تومان هستند - فقط اعداد استخراج و نرمالایز می‌شوند
     const result = { 
-      buy: normalizePrice(buyMatch[1]), // بدون عملیات ریاضی اضافی
+      buy: normalizePrice(buyMatch[1]),
       sell: normalizePrice(sellMatch[1]) 
     };
     setCachedPrice("BazareTala.com", result);
@@ -505,12 +506,22 @@
     }}
   ];
 
+  // 🔒 نسخه امن‌سازی شده تابع ارسال
   async function sendToDestination(company_id, buy, sell, token) {
     try {
       const res = await fetch("https://zarsaman.ir/admin/zar.php", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ company_id, buy, sell, token })
+        headers: { 
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Secure-Key": apiKey // اضافه کردن هدر امنیتی
+        },
+        body: new URLSearchParams({ 
+          company_id, 
+          buy, 
+          sell, 
+          token,
+          api_key: apiKey // 🔒 اضافه کردن کلید امنیتی جدید
+        })
       });
       const text = await res.text();
       try {
@@ -552,8 +563,10 @@
     }
   }
 
+  // اجرای اولیه
   runTask();
-  setInterval(runTask, 60000);
+  // اجرای خودکار هر 30 ثانیه
+  setInterval(runTask, 30000);
 </script>
 </body>
 </html>
