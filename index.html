@@ -39,19 +39,18 @@
   const token = 'tokenKEN253gerw75fsdgesty6udsgseev'; // توکن قدیمی (برای سازگاری)
   const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی جدید
 
-  // 🔄 لیست Proxyهای جایگزین (اولویت‌بندی شده)
-  const proxyList = [
-    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۱ - جدیدترین و پایدارترین
-    'https://corsproxy.org/?', // اولویت ۲ - جایگزین مستقیم
-    'https://api.allorigins.win/raw?url=', // اولویت ۳ - جایگزین دیگر
-    'https://cors-anywhere.herokuapp.com/', // اولویت ۴ - قدیمی
-    '' // مستقیم (آخرین راه - اگر سایت CORS داشته باشد)
-  ];
+// 🔄 لیست Proxyهای جایگزین (آپدیت شده)
+const proxyList = [
+    'https://corsproxy.io/?', // اولویت ۱ - دوباره فعال شد
+    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۲
+    'https://corsproxy.org/?', // اولویت ۳
+    'https://api.allorigins.win/raw?url=', // اولویت ۴
+    '' // مستقیم
+];
 
-  let currentProxyIndex = 0;
-  let proxyUrl = proxyList[currentProxyIndex];
-
-  console.log('🚀 Proxy فعال:', proxyUrl || 'مستقیم');
+let currentProxyIndex = 0;
+let proxyUrl = proxyList[currentProxyIndex];
+console.log('🚀 Proxy فعال:', proxyUrl || 'مستقیم');');
 
   function normalizePrice(value, multiply = 1) {
     if (value === null || value === undefined) return null;
