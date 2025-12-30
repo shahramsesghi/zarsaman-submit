@@ -356,39 +356,25 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-{  
-  name: "BazareTala.com", 
-  company_id: 25, 
-  async fetchData() {
-    const cached = getCachedPrice("BazareTala.com");
-    if (cached) return cached;
-
-    try {
-      const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://bazaretala.com/melted-gold-bar"));
-      if (!res) return null;
-
-      const html = await res.text();
-
-      // استخراج قیمت خرید و فروش از کلاس های goldBuyPrice و goldSellPrice
-      const buyMatch = html.match(/class="goldBuyPrice"[^>]*>[\s\S]*?([\d,]+)/i);
-      const sellMatch = html.match(/class="goldSellPrice"[^>]*>[\s\S]*?([\d,]+)/i);
-
-      if (!buyMatch || !sellMatch) return null;
-
-      // تبدیل رشته به عدد، حذف کاما و تقسیم بر ۱۰ برای تبدیل به تومان
-      const buyToman = Math.round(parseFloat(buyMatch[1].replace(/,/g, '')) / 10);
-      const sellToman = Math.round(parseFloat(sellMatch[1].replace(/,/g, '')) / 10);
-
-      const result = { buy: buyToman, sell: sellToman };
-
-      setCachedPrice("BazareTala.com", result);
-      return result;
-    } catch (e) { 
-      console.error(e); 
-      return null; 
-    }
-  }
-},
+  { name: "BazareTala.com", company_id: 25, async fetchData() {
+  const cached = getCachedPrice("BazareTala.com");
+  if (cached) return cached;
+  try {
+    const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://bazaretala.com/melted-gold-bar"));
+    if (!res) return null;
+    const html = await res.text();
+    const buyMatch = html.match(/خرید هر گرم طلا از ما\s*([\d,]+)/i);
+    const sellMatch = html.match(/فروش هر گرم طلا به ما\s*([\d,]+)/i);
+    if (!buyMatch || !sellMatch) return null;
+    // قیمت‌ها مستقیماً به تومان هستند - فقط اعداد استخراج و نرمالایز می‌شوند
+    const result = { 
+      buy: normalizePrice(buyMatch[1]), // بدون عملیات ریاضی اضافی
+      sell: normalizePrice(sellMatch[1]) 
+    };
+    setCachedPrice("BazareTala.com", result);
+    return result;
+  } catch (e) { console.error(e); return null; }
+}},
     { name: "Talasea.ir", company_id: 26, async fetchData() {
       const cached = getCachedPrice("Talasea.ir");
       if (cached) return cached;
