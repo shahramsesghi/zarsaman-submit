@@ -10,9 +10,10 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
     th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
     th { background: #3498db; color: white; }
-    .log-container { max-height: 500px; overflow-y auto; border: 1px solid #ccc; border-radius: 8px; background: white; padding: 10px; margin-top: 20px; }
+    .log-container { max-height: 500px; overflow-y: auto; border: 1px solid #ccc; border-radius: 8px; background: white; padding: 10px; margin-top: 20px; }
     .success { color: #27ae60; font-weight: bold; }
     .error { color: #e74c3c; font-weight: bold; }
+    .warning { color: #f39c12; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -34,7 +35,8 @@
 <script>
   // 🔒 توکن‌های امنیتی
   const token = 'tokenKEN253gerw75fsdgesty6udsgseev'; // توکن قدیمی (برای سازگاری)
-  const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی جدید
+  const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی اصلی
+  const vercelSecret = 'VERCEL_SUBMIT_2025_' + btoa(new Date().toISOString().slice(0,7)).replace(/=/g, ''); // کلید ماهانه برای Vercel
   const proxyUrl = 'https://corsproxy.io/?';
 
   function normalizePrice(value, multiply = 1) {
@@ -49,6 +51,10 @@
       try {
         const res = await fetch(url, options);
         if (res.ok) return res;
+        // اگر خطای 429 (Rate Limit) دریافت کردیم، بیشتر صبر کنیم
+        if (res.status === 429) {
+          await new Promise(resolve => setTimeout(resolve, backoff * 5 * (i + 1)));
+        }
       } catch (e) {
         console.error("Fetch error:", e);
       }
@@ -506,7 +512,7 @@
     }}
   ];
 
-  // 🔒 نسخه امن‌سازی شده تابع ارسال
+  // 🔒 نسخه امن‌سازی شده تابع ارسال با پشتیبانی از Vercel
   async function sendToDestination(company_id, buy, sell, token) {
     try {
       const res = await fetch("https://zarsaman.ir/admin/zar.php", {
@@ -520,7 +526,8 @@
           buy, 
           sell, 
           token,
-          api_key: apiKey // 🔒 اضافه کردن کلید امنیتی جدید
+          api_key: apiKey, // 🔒 اضافه کردن کلید امنیتی جدید
+          vercel_secret: vercelSecret // 🔒 اضافه کردن secret مخصوص Vercel
         })
       });
       const text = await res.text();
@@ -538,29 +545,67 @@
     const tbody = document.querySelector("#logTable tbody");
     const tr = document.createElement("tr");
     const now = new Date().toLocaleString('fa-IR');
-    const status = response?.status === 'success' ? 'success' : 'error';
+    
+    let status = 'error';
+    let statusClass = 'error';
+    
+    if (response?.status === 'success') {
+      status = 'موفق';
+      statusClass = 'success';
+    } else if (response?.skipped) {
+      status = 'تکراری';
+      statusClass = 'warning';
+    } else if (response?.message) {
+      status = response.message;
+    } else if (typeof response === 'string') {
+      status = response;
+    }
+    
     tr.innerHTML = `
       <td>${now}</td>
       <td>${site}</td>
       <td>${buy ? buy.toLocaleString('fa-IR') : "-"}</td>
       <td>${sell ? sell.toLocaleString('fa-IR') : "-"}</td>
-      <td class="${status}">${response?.message || response || 'نامشخص'}</td>
+      <td class="${statusClass}">${status}</td>
     `;
     tbody.prepend(tr);
+    
+    // اگر خطای ۴۰۳ بود، پیام ویژه نشان بده
+    if (response?.message?.includes('دسترسی') || response?.message?.includes('کلید')) {
+      const warningRow = document.createElement('tr');
+      warningRow.innerHTML = `
+        <td colspan="5" class="warning text-center">
+          ⚠️ خطای امنیتی: ${response.message}. لطفا از <a href="https://github.com/shahramsesghi/zarsaman-submit" target="_blank">GitHub</a> فایل submit را آپدیت کنید.
+        </td>
+      `;
+      tbody.prepend(warningRow);
+    }
   }
 
   async function runTask() {
+    console.log('🚀 شروع ارسال خودکار قیمت‌ها از Vercel...');
+    console.log('🔑 توکن Vercel:', vercelSecret.substring(0, 15) + '...');
+    
     for (let i = 0; i < apis.length; i++) {
       const api = apis[i];
       const result = await api.fetchData();
       if (result) {
+        console.log(`📤 ارسال ${api.name}: خرید=${result.buy}, فروش=${result.sell}`);
         const response = await sendToDestination(api.company_id, result.buy, result.sell, token);
         logResult(api.name, result.buy, result.sell, response);
+        
+        // اگر خطای امنیتی داریم، متوقف شو
+        if (response?.message?.includes('دسترسی') || response?.status === 403) {
+          logResult("سیستم", null, null, "⛔ ارسال متوقف شد: خطای امنیتی. لطفا فایل‌ها را آپدیت کنید.");
+          break;
+        }
       } else {
         logResult(api.name, null, null, "خطا در دریافت داده");
       }
       await new Promise(resolve => setTimeout(resolve, 500));
     }
+    
+    console.log('✅ ارسال کامل شد');
   }
 
   // اجرای اولیه
