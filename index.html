@@ -10,10 +10,9 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
     th, td { border: 1px solid #ddd; padding: 12px; text-align: center; font-size: 14px; }
     th { background: #3498db; color: white; }
-    .log-container { max-height: 500px; overflow-y: auto; border: 1px solid #ccc; border-radius: 8px; background: white; padding: 10px; margin-top: 20px; }
+    .log-container { max-height: 500px; overflow-y auto; border: 1px solid #ccc; border-radius: 8px; background: white; padding: 10px; margin-top: 20px; }
     .success { color: #27ae60; font-weight: bold; }
     .error { color: #e74c3c; font-weight: bold; }
-    .warning { color: #f39c12; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -35,8 +34,7 @@
 <script>
   // 🔒 توکن‌های امنیتی
   const token = 'tokenKEN253gerw75fsdgesty6udsgseev'; // توکن قدیمی (برای سازگاری)
-  const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی اصلی
-  const vercelSecret = 'VERCEL_SUBMIT_2025_' + btoa(new Date().toISOString().slice(0,7)).replace(/=/g, ''); // کلید ماهانه برای Vercel
+  const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی جدید
   const proxyUrl = 'https://corsproxy.io/?';
 
   function normalizePrice(value, multiply = 1) {
@@ -51,10 +49,6 @@
       try {
         const res = await fetch(url, options);
         if (res.ok) return res;
-        // اگر خطای 429 (Rate Limit) دریافت کردیم، بیشتر صبر کنیم
-        if (res.status === 429) {
-          await new Promise(resolve => setTimeout(resolve, backoff * 5 * (i + 1)));
-        }
       } catch (e) {
         console.error("Fetch error:", e);
       }
@@ -511,107 +505,209 @@
       } catch (e) { console.error(e); return null; }
     }}
   ];
-
-  // 🔒 نسخه امن‌سازی شده تابع ارسال با پشتیبانی از Vercel
-  async function sendToDestination(company_id, buy, sell, token) {
+// 🔒 نسخه امن‌سازی شده تابع ارسال با دیباگ کامل
+async function sendToDestination(company_id, buy, sell, token) {
     try {
-      const res = await fetch("https://zarsaman.ir/admin/zar.php", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/x-www-form-urlencoded",
-          "X-Secure-Key": apiKey // اضافه کردن هدر امنیتی
-        },
-        body: new URLSearchParams({ 
-          company_id, 
-          buy, 
-          sell, 
-          token,
-          api_key: apiKey, // 🔒 اضافه کردن کلید امنیتی جدید
-          vercel_secret: vercelSecret // 🔒 اضافه کردن secret مخصوص Vercel
-        })
-      });
-      const text = await res.text();
-      try {
-        return JSON.parse(text);
-      } catch {
-        return text;
-      }
+        console.log('🔍 ارسال به سرور:', { 
+            company_id, 
+            buy: buy?.toLocaleString('fa-IR'), 
+            sell: sell?.toLocaleString('fa-IR'),
+            timestamp: new Date().toLocaleTimeString('fa-IR')
+        });
+        
+        const requestBody = new URLSearchParams({ 
+            company_id, 
+            buy, 
+            sell, 
+            token,
+            api_key: apiKey // 🔒 اضافه کردن کلید امنیتی جدید
+            // vercel_secret: vercelSecret // موقتاً غیرفعال برای تست
+        }).toString();
+        
+        console.log('📤 درخواست POST:', requestBody.substring(0, 100) + '...');
+        
+        const response = await fetch("https://zarsaman.ir/admin/zar.php", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Secure-Key": apiKey // اضافه کردن هدر امنیتی
+            },
+            body: requestBody
+        });
+        
+        console.log('📥 پاسخ سرور:', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            type: response.type,
+            url: response.url
+        });
+        
+        // بررسی هدرهای پاسخ
+        const headers = {};
+        response.headers.forEach((value, key) => {
+            headers[key] = value;
+        });
+        console.log('📋 هدرهای پاسخ:', headers);
+        
+        const text = await response.text();
+        console.log('📄 متن پاسخ:', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
+        
+        try {
+            const parsed = JSON.parse(text);
+            console.log('✅ پاسخ پارس شده:', parsed);
+            return parsed;
+        } catch (jsonError) {
+            console.warn('⚠️ پاسخ JSON نیست:', text);
+            return text;
+        }
     } catch (err) {
-      return "خطا در ارسال: " + err.message;
+        console.error('❌ خطای fetch:', {
+            name: err.name,
+            message: err.message,
+            stack: err.stack?.split('\n')[0]
+        });
+        return { 
+            status: 'error', 
+            message: 'خطای شبکه: ' + err.message 
+        };
     }
-  }
+}
 
-  function logResult(site, buy, sell, response) {
+function logResult(site, buy, sell, response) {
     const tbody = document.querySelector("#logTable tbody");
     const tr = document.createElement("tr");
     const now = new Date().toLocaleString('fa-IR');
     
-    let status = 'error';
+    let status = 'نامشخص';
     let statusClass = 'error';
+    let details = '';
     
     if (response?.status === 'success') {
-      status = 'موفق';
-      statusClass = 'success';
+        status = 'موفق';
+        statusClass = 'success';
+        details = response.message || 'ذخیره شد';
     } else if (response?.skipped) {
-      status = 'تکراری';
-      statusClass = 'warning';
-    } else if (response?.message) {
-      status = response.message;
+        status = 'تکراری';
+        statusClass = 'warning';
+        details = response.message || 'رد شد';
+    } else if (response?.status === 'error') {
+        status = 'خطا';
+        statusClass = 'error';
+        details = response.message || 'خطای سرور';
     } else if (typeof response === 'string') {
-      status = response;
+        status = 'خطا';
+        details = response;
+    } else if (response?.message) {
+        status = 'خطا';
+        details = response.message;
+    }
+    
+    // اضافه کردن اطلاعات دیباگ
+    if (response && response.status !== 'success') {
+        details += ` (کد: ${response.status || 'N/A'})`;
     }
     
     tr.innerHTML = `
-      <td>${now}</td>
-      <td>${site}</td>
-      <td>${buy ? buy.toLocaleString('fa-IR') : "-"}</td>
-      <td>${sell ? sell.toLocaleString('fa-IR') : "-"}</td>
-      <td class="${statusClass}">${status}</td>
+        <td>${now}</td>
+        <td><strong>${site}</strong></td>
+        <td class="font-mono">${buy ? buy.toLocaleString('fa-IR') : "-"}</td>
+        <td class="font-mono">${sell ? sell.toLocaleString('fa-IR') : "-"}</td>
+        <td class="${statusClass}">${details}</td>
     `;
     tbody.prepend(tr);
     
-    // اگر خطای ۴۰۳ بود، پیام ویژه نشان بده
-    if (response?.message?.includes('دسترسی') || response?.message?.includes('کلید')) {
-      const warningRow = document.createElement('tr');
-      warningRow.innerHTML = `
-        <td colspan="5" class="warning text-center">
-          ⚠️ خطای امنیتی: ${response.message}. لطفا از <a href="https://github.com/shahramsesghi/zarsaman-submit" target="_blank">GitHub</a> فایل submit را آپدیت کنید.
-        </td>
-      `;
-      tbody.prepend(warningRow);
+    // اگر خطای ۴۰۳ یا ۴۰۱ بود، پیام هشدار اضافه کن
+    if (response?.status === 403 || response?.status === 401 || 
+        details?.includes('دسترسی') || details?.includes('توکن')) {
+        const warningRow = document.createElement('tr');
+        warningRow.innerHTML = `
+            <td colspan="5" class="warning text-center bg-yellow-50">
+                ⚠️ هشدار امنیتی: ${details}. لطفا از 
+                <a href="https://github.com/shahramsesghi/zarsaman-submit" target="_blank" class="underline">
+                    GitHub
+                </a> 
+                فایل submit را آپدیت کنید.
+            </td>
+        `;
+        tbody.prepend(warningRow);
     }
-  }
+}
 
-  async function runTask() {
+async function runTask() {
     console.log('🚀 شروع ارسال خودکار قیمت‌ها از Vercel...');
-    console.log('🔑 توکن Vercel:', vercelSecret.substring(0, 15) + '...');
+    console.log('🔑 توکن‌ها:', { 
+        token: token.substring(0, 10) + '...',
+        apiKey: apiKey.substring(0, 15) + '...',
+        origin: window.location.origin
+    });
+    
+    let successCount = 0;
+    let errorCount = 0;
     
     for (let i = 0; i < apis.length; i++) {
-      const api = apis[i];
-      const result = await api.fetchData();
-      if (result) {
-        console.log(`📤 ارسال ${api.name}: خرید=${result.buy}, فروش=${result.sell}`);
-        const response = await sendToDestination(api.company_id, result.buy, result.sell, token);
-        logResult(api.name, result.buy, result.sell, response);
+        const api = apis[i];
+        console.log(`\n🔄 پردازش ${i+1}/${apis.length}: ${api.name}`);
         
-        // اگر خطای امنیتی داریم، متوقف شو
-        if (response?.message?.includes('دسترسی') || response?.status === 403) {
-          logResult("سیستم", null, null, "⛔ ارسال متوقف شد: خطای امنیتی. لطفا فایل‌ها را آپدیت کنید.");
-          break;
+        const result = await api.fetchData();
+        if (result) {
+            console.log(`📊 داده دریافت شد: خرید=${result.buy?.toLocaleString('fa-IR')}, فروش=${result.sell?.toLocaleString('fa-IR')}`);
+            const response = await sendToDestination(api.company_id, result.buy, result.sell, token);
+            logResult(api.name, result.buy, result.sell, response);
+            
+            // آمار
+            if (response?.status === 'success') {
+                successCount++;
+            } else {
+                errorCount++;
+            }
+            
+            // اگر خطای امنیتی داریم، متوقف شو
+            if (response?.status === 403 || response?.status === 401) {
+                console.error(`⛔ توقف ارسال: خطای امنیتی برای ${api.name}`);
+                logResult("سیستم", null, null, { 
+                    status: 'error', 
+                    message: `⛔ ارسال متوقف شد: خطای امنیتی (${response.message || 'دسترسی غیرمجاز'})` 
+                });
+                break;
+            }
+        } else {
+            console.warn(`⚠️ داده دریافت نشد: ${api.name}`);
+            logResult(api.name, null, null, "خطا در دریافت داده از سایت مرجع");
+            errorCount++;
         }
-      } else {
-        logResult(api.name, null, null, "خطا در دریافت داده");
-      }
-      await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // تاخیر ۵۰۰ms بین درخواست‌ها
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    console.log('✅ ارسال کامل شد');
-  }
+    // خلاصه اجرا
+    console.log(`\n📈 خلاصه اجرا: ${successCount} موفق، ${errorCount} خطا`);
+    if (errorCount > 0) {
+        logResult("خلاصه", null, null, { 
+            status: 'warning', 
+            message: `✅ اجرا کامل: ${successCount} موفق، ${errorCount} خطا` 
+        });
+    }
+}
 
-  // اجرای اولیه
-  runTask();
-  // اجرای خودکار هر 30 ثانیه
-  setInterval(runTask, 30000);
+// اجرای اولیه
+console.log('🏁 شروع برنامه submit...');
+runTask().catch(err => {
+    console.error('💥 خطای کلی در runTask:', err);
+    logResult("سیستم", null, null, { 
+        status: 'error', 
+        message: 'خطای سیستمی: ' + err.message 
+    });
+});
+
+// اجرای خودکار هر 30 ثانیه
+setInterval(() => {
+    console.log('\n🔄 رفرش خودکار...');
+    runTask().catch(err => {
+        console.error('💥 خطای رفرش:', err);
+    });
+}, 30000);
 </script>
 </body>
 </html>
