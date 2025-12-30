@@ -186,13 +186,162 @@
         const data = await res.json();
         if (!data || !Array.isArray(data.list) || data.list.length === 0) return null;
         const last = data.list[data.list.length - 1];
-        const result = { buy: normalizePrice(last.sell / 10), sell: normalizePrice(last.buy / 10) }; // فیکس شده - } اضافی حذف شد
+        const result = { buy: normalizePrice(last.sell / 10), sell: normalizePrice(last.buy / 10) };
         setCachedPrice("Hamrahgold.com", result);
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    // بقیه شیء‌ها رو از کد قبلی کپی کن، اما چک کن } اضافی نداشته باشن
-    // مثلاً برای Tokeniko.com:
+    { name: "Goldnia.com", company_id: 11, async fetchData() {
+      const cached = getCachedPrice("Goldnia.com");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.goldnia.com/api/v1/order/price"));
+        if (!res) return null;
+        const data = await res.json();
+        if (!data || !data.price || Number(data.price) <= 0) return null;
+        const base = Number(data.price);
+        const result = { buy: normalizePrice(base * 0.099), sell: normalizePrice(base * 0.101) };
+        setCachedPrice("Goldnia.com", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Baazar.ir", company_id: 12, async fetchData() {
+      const cached = getCachedPrice("Baazar.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.baazar.ir/landing/v1/price/DAILY/30"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.data.sellPrice * 0.1), sell: normalizePrice(data.data.buyPrice * 0.1) };
+        setCachedPrice("Baazar.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Daric.gold", company_id: 13, async fetchData() {
+      const cached = getCachedPrice("Daric.gold");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://apisc.daric.gold/loan/api/v1/User/Collateral/GetGoldlPrice"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.Data.BestBuyPrice * 10), sell: normalizePrice(data.Data.BestSellPrice * 10) }; // ضرب در ۱۰ برای فیکس قیمت پایین
+        setCachedPrice("Daric.gold", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Goldis.ir", company_id: 14, async fetchData() {
+      const cached = getCachedPrice("Goldis.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.data.final_sell_price * 0.1), sell: normalizePrice(data.data.final_buy_price * 0.1) };
+        setCachedPrice("Goldis.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Invi.ir", company_id: 15, async fetchData() {
+      const cached = getCachedPrice("Invi.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=1760003391&to=1760089791&currencyCode=IRR"));
+        if (!res) return null;
+        const data = await res.json();
+        const base = data.h[data.h.length - 1];
+        const result = { buy: normalizePrice(base * 99), sell: normalizePrice(base * 101) };
+        setCachedPrice("Invi.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "MelliGold", company_id: 16, async fetchData() {
+      const cached = getCachedPrice("MelliGold");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://melligold.com/api/v1/exchange/buy-sell-price/"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.data.price_buy * 0.995), sell: normalizePrice(data.data.price_sell * 1.005) };
+        setCachedPrice("MelliGold", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Milli.gold", company_id: 17, async fetchData() {
+      const cached = getCachedPrice("Milli.gold");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://milli.gold/api/v1/public/milli-price/external"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.data.price18 * 99.5), sell: normalizePrice(data.data.price18 * 100.5) };
+        setCachedPrice("Milli.gold", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Talano.ir", company_id: 18, async fetchData() {
+      const cached = getCachedPrice("Talano.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://service.talano.ir/api/v1/market/price/"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.sellPrice), sell: normalizePrice(data.buyPrice) };
+        setCachedPrice("Talano.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Digikala.com/wealth", company_id: 19, async fetchData() {
+      const cached = getCachedPrice("Digikala.com/wealth");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.digikala.com/non-inventory/v1/prices/"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.gold18.price * 99.5), sell: normalizePrice(data.gold18.price * 100.5) };
+        setCachedPrice("Digikala.com/wealth", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Zarinex.io", company_id: 20, async fetchData() {
+      const cached = getCachedPrice("Zarinex.io");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.zarinex.io/wallets/v1/prices"));
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.data.G18.buy.instant), sell: normalizePrice(data.data.G18.sell.instant) };
+        setCachedPrice("Zarinex.io", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Zarpay24", company_id: 21, async fetchData() {
+      const cached = getCachedPrice("Zarpay24");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://zarpay24.com/market/coins/?format=json"));
+        if (!res) return null;
+        const data = await res.json();
+        const gold = data.find(i => i.symbol === "GOLD");
+        if (!gold) return null;
+        const result = { buy: normalizePrice(gold.buy_price * 0.99), sell: normalizePrice(gold.sell_price * 1.005) };
+        setCachedPrice("Zarpay24", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Zaryaalgold.com", company_id: 22, async fetchData() {
+      const cached = getCachedPrice("Zaryaalgold.com");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("http://et.tala.ir/webservice/zaryaalgold.com/6397fff8333f099bb55cd539f865abbb"));
+        if (!res) return null;
+        const data = await res.json();
+        const base = data.geram18.value;
+        const oneSotValue = base / 1000;
+        const result = { buy: normalizePrice(base / 10), sell: normalizePrice((base * 1.005 + oneSotValue) / 10) };
+        setCachedPrice("Zaryaalgold.com", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
     { name: "Tokeniko.com", company_id: 24, async fetchData() {
       const cached = getCachedPrice("Tokeniko.com");
       if (cached) return cached;
@@ -207,9 +356,149 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    // و برای همه سایت‌های دیگر که قیمت بزرگ می‌دن (مثل Zaryaalgold, Goldika, Zarminex, Talajet) تقسیم بر ۱۰ اضافه کن
-
-    // ... بقیه ۳۳ شیء (از کد قبلی کپی کن، فقط } اضافی رو حذف کن)
+    { name: "BazareTala.com", company_id: 25, async fetchData() {
+      const cached = getCachedPrice("BazareTala.com");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://bazaretala.com/melted-gold-bar"));
+        if (!res) return null;
+        const html = await res.text();
+        const buyMatch = html.match(/خرید هر گرم طلا از ما\s*([\d,]+)/i);
+        const sellMatch = html.match(/فروش هر گرم طلا به ما\s*([\d,]+)/i);
+        if (!buyMatch || !sellMatch) return null;
+        const result = { buy: normalizePrice(buyMatch[1]), sell: normalizePrice(sellMatch[1]) };
+        setCachedPrice("BazareTala.com", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Talasea.ir", company_id: 26, async fetchData() {
+      const cached = getCachedPrice("Talasea.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.talasea.ir/api/market/getGoldPrice"));
+        if (!res) return null;
+        const data = await res.json();
+        const basePriceToman = Number(data.price);
+        if (!basePriceToman || isNaN(basePriceToman) || basePriceToman <= 0) return null;
+        const result = { buy: Math.round(basePriceToman * 1.01), sell: Math.round(basePriceToman * 0.99) };
+        setCachedPrice("Talasea.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "talapp.ir", company_id: 27, async fetchData() {
+      const cached = getCachedPrice("talapp.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://talapp.ir/"));
+        if (!res) return null;
+        const html = await res.text();
+        const priceMatch = html.match(/([\d,]{7,9})/);
+        if (!priceMatch) return null;
+        const basePriceToman = Number(priceMatch[1].replace(/,/g, ''));
+        if (basePriceToman <= 0) return null;
+        const result = { buy: Math.round(basePriceToman * 0.9955), sell: Math.round(basePriceToman * 1.0045) };
+        setCachedPrice("talapp.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "igolden.ir", company_id: 28, async fetchData() {
+      const cached = getCachedPrice("igolden.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.tgju.org/v1/widget/tmp?keys=137121"));
+        if (!res) return null;
+        const data = await res.json();
+        const basePriceRialStr = data?.response?.indicators?.[0]?.p;
+        if (!basePriceRialStr || isNaN(basePriceRialStr) ) return null;
+        const basePriceToman = Number(basePriceRialStr) / 10;
+        const result = { buy: Math.round(basePriceToman * 0.99), sell: Math.round(basePriceToman * 1.01) };
+        setCachedPrice("igolden.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "goldenfa.ir", company_id: 29, async fetchData() {
+      const cached = getCachedPrice("goldenfa.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.goldenfa.ir/v1/market/ticker"));
+        if (!res) return null;
+        const data = await res.json();
+        const gram18 = data?.data?.find(item => item.symbol === "gram18");
+        if (!gram18 || !gram18.close || isNaN(gram18.close)) return null;
+        const basePriceToman = Number(gram18.close);
+        if (basePriceToman <= 0) return null;
+        const result = { buy: Math.round(basePriceToman * 1.01), sell: Math.round(basePriceToman * 0.99) };
+        setCachedPrice("goldenfa.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Irantt.ir", company_id: 30, async fetchData() {
+      const cached = getCachedPrice("Irantt.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://www.tala.ir/banner/?ids=geram18"));
+        if (!res) return null;
+        const data = await res.json();
+        const geram18Str = data?.price?.geram18;
+        if (!geram18Str) return null;
+        const baseToman = Number(geram18Str.replace(/,/g, ''));
+        if (baseToman <= 0) return null;
+        const result = { buy: Math.round(baseToman * 0.99), sell: Math.round(baseToman * 1.01) };
+        setCachedPrice("Irantt.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "zarline.app", company_id: 31, async fetchData() {
+      const cached = getCachedPrice("zarline.app");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.zarline.app/core/v1/markets/N2K1LGxd8B/price"));
+        if (!res) return null;
+        const data = await res.json();
+        const basePriceToman = data?.data?.price;
+        if (!basePriceToman || isNaN(basePriceToman)) return null;
+        const result = { buy: Math.round(basePriceToman * 0.995), sell: Math.round(basePriceToman * 1.005) };
+        setCachedPrice("zarline.app", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "zarniv.ir", company_id: 32, async fetchData() {
+      const cached = getCachedPrice("zarniv.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://trade.zarniv.ir/apiprice/10"));
+        if (!res) return null;
+        const data = await res.json();
+        if (!data?.prices || !Array.isArray(data.prices) || data.prices.length === 0) return null;
+        const latest = data.prices[0];
+        const baseToman = Number(latest?.Geram18);
+        if (!baseToman || baseToman <= 0) return null;
+        const result = { buy: Math.round(baseToman * 0.99), sell: Math.round(baseToman * 1.01) };
+        setCachedPrice("zarniv.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "panahcoin.com", company_id: 33, async fetchData() {
+      const cached = getCachedPrice("panahcoin.com");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://www.panahcoin.com/rates/"));
+        if (!res) return null;
+        const html = await res.text();
+        const rowMatch = html.match(/<td[^>]*>\s*طلای\s*(?:18|هجده)\s*عیار\s*<\/td>[\s\S]*?<\/tr>/i);
+        if (!rowMatch) return null;
+        const rowHtml = rowMatch[0];
+        const priceMatches = rowHtml.matchAll(/shortcode_price'?>\s*([\d,]+)\s*</g);
+        const prices = Array.from(priceMatches, m => m[1]);
+        if (prices.length < 2) return null;
+        const buyToman = Number(prices[0].replace(/,/g, ""));
+        const sellToman = Number(prices[1].replace(/,/g, ""));
+        if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) return null;
+        const result = { buy: buyToman, sell: sellToman };
+        setCachedPrice("panahcoin.com", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }}
   ];
 
   async function sendToDestination(company_id, buy, sell, token) {
@@ -255,7 +544,7 @@
       } else {
         logResult(api.name, null, null, "خطا در دریافت داده");
       }
-      await new Promise(resolve => setTimeout(resolve, 500)); // تاخیر برای پایداری
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
 
