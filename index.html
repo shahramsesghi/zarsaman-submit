@@ -390,53 +390,27 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    {
-  name: "talapp.ir",
-  company_id: 27,
-
-  async fetchData() {
-    const cached = getCachedPrice("talapp.ir");
-    if (cached) return cached;
-
-    try {
-      const res = await fetchWithRetry(
-        proxyUrl + encodeURIComponent("https://talapp.ir/"),
-        { headers: { "User-Agent": "Mozilla/5.0" } }
-      );
-
-      if (!res) return null;
-
-      const html = await res.text();
-
-      // استخراج JSON از داخل JS
-      const match = html.match(/var\s+goldPriceData\s*=\s*(\{[\s\S]*?\});/);
-      if (!match) return null;
-
-      const data = JSON.parse(match[1]);
-      const base = Number(data?.result?.buy_gold);
-
-      if (!Number.isFinite(base) || base <= 0) return null;
-
-      // اعمال اسپرد ۰٫۴۵٪
-      const result = {
-        buy: Math.round(base * 0.9955),
-        sell: Math.round(base * 1.0045)
-      };
-
-      setCachedPrice("talapp.ir", result);
-      return result;
-
-    } catch (e) {
-      console.error("talapp.ir error:", e);
-      return null;
-    }
-  }
-},
+    { name: "talapp.ir", company_id: 27, async fetchData() {
+      const cached = getCachedPrice("talapp.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://talapp.ir/"));
+        if (!res) return null;
+        const html = await res.text();
+        const priceMatch = html.match(/([\d,]{7,9})/);
+        if (!priceMatch) return null;
+        const basePriceToman = Number(priceMatch[1].replace(/,/g, ''));
+        if (basePriceToman <= 0) return null;
+        const result = { buy: Math.round(basePriceToman * 0.9955), sell: Math.round(basePriceToman * 1.0045) };
+        setCachedPrice("talapp.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
     { name: "igolden.ir", company_id: 28, async fetchData() {
       const cached = getCachedPrice("igolden.ir");
       if (cached) return cached;
       try {
-        c://api.tgju.org/v1/widget/tmp?keys=137121"));
+        const res = await fetchWithRetry(proxyUrl + encodeURIComponent("https://api.tgju.org/v1/widget/tmp?keys=137121"));
         if (!res) return null;
         const data = await res.json();
         const basePriceRialStr = data?.response?.indicators?.[0]?.p;
@@ -445,7 +419,7 @@
         const result = { buy: Math.round(basePriceToman * 0.99), sell: Math.round(basePriceToman * 1.01) };
         setCachedPrice("igolden.ir", result);
         return result;
-      } catch (e) { console.error(e); return null; }onst res = await fetchWithRetry(proxyUrl + encodeURIComponent("https
+      } catch (e) { console.error(e); return null; }
     }},
     { name: "goldenfa.ir", company_id: 29, async fetchData() {
       const cached = getCachedPrice("goldenfa.ir");
