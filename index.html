@@ -460,22 +460,6 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    { name: "talapp.ir", company_id: 27, async fetchData() {
-      const cached = getCachedPrice("talapp.ir");
-      if (cached) return cached;
-      try {
-        const res = await fetchWithRetry("https://talapp.ir/");
-        if (!res) return null;
-        const html = await res.text();
-        const priceMatch = html.match(/([\d,]{7,9})/);
-        if (!priceMatch) return null;
-        const basePriceToman = Number(priceMatch[1].replace(/,/g, ''));
-        if (basePriceToman <= 0) return null;
-        const result = { buy: Math.round(basePriceToman * 0.9955), sell: Math.round(basePriceToman * 1.0045) };
-        setCachedPrice("talapp.ir", result);
-        return result;
-      } catch (e) { console.error(e); return null; }
-    }},
     { name: "igolden.ir", company_id: 28, async fetchData() {
       const cached = getCachedPrice("igolden.ir");
       if (cached) return cached;
@@ -774,3 +758,4 @@
 </script>
 </body>
 </html>
+
