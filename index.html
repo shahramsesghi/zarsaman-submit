@@ -301,18 +301,44 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    { name: "Goldis.ir", company_id: 14, async fetchData() {
-      const cached = getCachedPrice("Goldis.ir");
-      if (cached) return cached;
-      try {
-        const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
-        if (!res) return null;
-        const data = await res.json();
-        const result = { buy: normalizePrice(data.data.final_sell_price * 0.1), sell: normalizePrice(data.data.final_buy_price * 0.1) };
-        setCachedPrice("Goldis.ir", result);
-        return result;
-      } catch (e) { console.error(e); return null; }
-    }},
+    {
+  name: "Goldis.ir",
+  company_id: 14,
+
+  async fetchData() {
+    const cacheKey = "Goldis.ir";
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const res = await fetchWithRetry(
+        "https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices"
+      );
+
+      if (!res || !res.ok) return null;
+
+      const json = await res.json();
+      if (!json.success || !json.data) return null;
+
+      // قیمت‌ها در API بر حسب ریال هستند → تبدیل به تومان
+      const buyToman  = Math.round(json.data.final_buy_price  / 10);
+      const sellToman = Math.round(json.data.final_sell_price / 10);
+
+      const result = {
+        buy: normalizePrice(buyToman),
+        sell: normalizePrice(sellToman)
+      };
+
+      setCachedPrice(cacheKey, result, 120);
+      return result;
+
+    } catch (e) {
+      console.error("Goldis.ir fetch error:", e);
+      return null;
+    }
+  }
+},
+,
     { name: "Invi.ir", company_id: 15, async fetchData() {
       const cached = getCachedPrice("Invi.ir");
       if (cached) return cached;
@@ -428,24 +454,40 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    { name: "BazareTala.com", company_id: 25, async fetchData() {
+    {
+    name: "BazareTala.com",
+    company_id: 25,
+    async fetchData() {
       const cached = getCachedPrice("BazareTala.com");
       if (cached) return cached;
+
       try {
-        const res = await fetchWithRetry("https://bazaretala.com/melted-gold-bar");
-        if (!res) return null;
-        const html = await res.text();
-        const buyMatch = html.match(/خرید هر گرم طلا از ما\s*([\d,]+)/i);
-        const sellMatch = html.match(/فروش هر گرم طلا به ما\s*([\d,]+)/i);
-        if (!buyMatch || !sellMatch) return null;
-        const result = { 
-          buy: normalizePrice(buyMatch[1]),
-          sell: normalizePrice(sellMatch[1]) 
+        const res = await fetchWithRetry("https://bazaretala.com/melted-gold-bar?ajax_request_price=true");
+        if (!res || !res.ok) return null;
+
+        const text = await res.text(); // مثال: goldBuyPrice=14792000,goldSellPrice=14541000
+
+        const buyMatch = text.match(/goldBuyPrice=(\d+)/);
+        const sellMatch = text.match(/goldSellPrice=(\d+)/);
+
+        if (!buyMatch || !sellMatch) {
+          console.warn("BazareTala.com: فرمت پاسخ تغییر کرده");
+          return null;
+        }
+
+        const result = {
+          buy: parseInt(buyMatch[1], 10),
+          sell: parseInt(sellMatch[1], 10)
         };
+
         setCachedPrice("BazareTala.com", result);
         return result;
-      } catch (e) { console.error(e); return null; }
-    }},
+      } catch (e) {
+        console.error("BazareTala.com error:", e);
+        return null;
+      }
+    }
+  },
     { name: "Talasea.ir", company_id: 26, async fetchData() {
       const cached = getCachedPrice("Talasea.ir");
       if (cached) return cached;
@@ -460,7 +502,7 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    { name: "igolden.ir", company_id: 28, async fetchData() {
+        { name: "igolden.ir", company_id: 28, async fetchData() {
       const cached = getCachedPrice("igolden.ir");
       if (cached) return cached;
       try {
@@ -758,4 +800,3 @@
 </script>
 </body>
 </html>
-
