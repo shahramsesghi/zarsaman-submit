@@ -263,19 +263,38 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    { name: "Goldnia.com", company_id: 11, async fetchData() {
+        { name: "Goldnia.com", company_id: 11, async fetchData() {
       const cached = getCachedPrice("Goldnia.com");
       if (cached) return cached;
       try {
         const res = await fetchWithRetry("https://api.goldnia.com/api/v1/order/price");
-        if (!res) return null;
+        if (!res || !res.ok) return null;
         const data = await res.json();
-        if (!data || !data.price || Number(data.price) <= 0) return null;
-        const base = Number(data.price);
-        const result = { buy: normalizePrice(base * 0.099), sell: normalizePrice(base * 0.101) };
+        
+        if (!data || !data.price || Number(data.price) <= 0) {
+          console.error("Goldnia.com: قیمت پایه نامعتبر یا خالی");
+          return null;
+        }
+        
+        // قیمت پایه به ریال
+        const baseRial = Number(data.price);
+        
+        // تبدیل به تومان در گرم (تقسیم بر 10)
+        const baseToman = Math.round(baseRial / 10);
+        
+        const result = {
+          // خرید از مشتری: -1%
+          buy: normalizePrice(baseToman * 0.99),
+          // فروش به مشتری: +1%
+          sell: normalizePrice(baseToman * 1.01)
+        };
+        
         setCachedPrice("Goldnia.com", result);
         return result;
-      } catch (e) { console.error(e); return null; }
+      } catch (e) {
+        console.error("Goldnia.com error:", e);
+        return null;
+      }
     }},
     { name: "Baazar.ir", company_id: 12, async fetchData() {
       const cached = getCachedPrice("Baazar.ir");
@@ -869,5 +888,6 @@
 </script>
 </body>
 </html>
+
 
 
