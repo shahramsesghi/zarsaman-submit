@@ -337,41 +337,37 @@
     }
   }
 },
-    {
-      name: "Goldis.ir",
+        {
+      name: "[Goldis.ir](http://Goldis.ir)",
       company_id: 14,
       async fetchData() {
         try {
-          // تست مستقیم بدون پروکسی و هدر اضافی (API کار می‌کنه)
+          // تست مستقیم بدون پروکسی و هدر اضافی
           const res = await fetch("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
           
-          if (!res || !res.ok) {
+          console.log("Goldis.ir status:", res.status);  // تست
+          if (!res.ok) {
             console.error("Goldis.ir: status نه OK", res.status);
             return null;
           }
           
           const json = await res.json();
           
+          console.log("Goldis.ir JSON نمونه:", json);  // تست
+          
           if (!json.success || !json.data) {
-            console.error("Goldis.ir: success false یا data خالی", json);
+            console.error("Goldis.ir: success false یا data خالی");
             return null;
           }
           
-          // اصلاح اصلی: data = json.data (نه آرایه)
-          const data = json.data;
+          const data = json.data;  // اصلاح اصلی
           
-          // قیمت ریال → تومان (/10)
           const buyToman = Math.round(data.final_buy_price / 10);
           const sellToman = Math.round(data.final_sell_price / 10);
           
-          console.log("Goldis.ir RAW قیمت:", { buyToman, sellToman });  // تست لاگ
+          console.log("Goldis.ir قیمت خام تومان:", { buyToman, sellToman });  // تست
           
-          const result = {
-            buy: buyToman,   // بدون normalize (برای تست ساده)
-            sell: sellToman
-          };
-          
-          return result;
+          return { buy: buyToman, sell: sellToman };  // بدون normalize برای تست
           
         } catch (e) {
           console.error("Goldis.ir error:", e.message);
@@ -933,6 +929,7 @@
 </script>
 </body>
 </html>
+
 
 
 
