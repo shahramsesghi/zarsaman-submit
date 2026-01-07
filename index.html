@@ -330,53 +330,34 @@
         }
       }
     },
-            {
-      name: "Goldis.ir",
-      company_id: 14,
+               {
+      name: "Daric.gold",
+      company_id: 13,
       async fetchData() {
-        const cacheKey = "[Goldis.ir](http://Goldis.ir)";
-        const cached = getCachedPrice(cacheKey);
-        if (cached && cached.buy && cached.sell) return cached;  // شرط بهتر cache
-
+        const cached = getCachedPrice("Daric.gold");
+        if (cached) return cached;
         try {
-          const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices", {
+          const res = await fetchWithRetry("https://apisc.daric.gold/loan/api/v1/User/Collateral/GetGoldlPrice", {
             headers: {
               "Accept": "application/json",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             }
           });
+          if (!res || !res.ok) return null;
+          const data = await res.json();
           
-          if (!res || !res.ok) {
-            console.error("Goldis.ir: status نه OK", res?.status);
-            return null;
-          }
+          if (!data.IsSuccess || !data.Data) return null;
           
-          console.log("Goldis.ir content-type:", res.headers.get("content-type"));  // تست
+          const buyToman = Number(data.Data.BestBuyPrice);
+          const sellToman = Number(data.Data.BestSellPrice);
           
-          const json = await res.json();
+          if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) return null;
           
-          if (!json.success || !json.data) {
-            console.error("Goldis.ir: success false یا data خالی");
-            return null;
-          }
-          
-          const data = json.data;  // اصلاح اصلی
-          
-          const buyToman = Math.round(data.final_buy_price / 10);
-          const sellToman = Math.round(data.final_sell_price / 10);
-          
-          console.log("Goldis.ir قیمت خام تومان:", { buyToman, sellToman });  // تست
-          
-          const result = {
-            buy: normalizePrice(buyToman),
-            sell: normalizePrice(sellToman)
-          };
-          
-          setCachedPrice(cacheKey, result, 120);
+          const result = { buy: normalizePrice(buyToman), sell: normalizePrice(sellToman) };
+          setCachedPrice("Daric.gold", result);
           return result;
-          
         } catch (e) {
-          console.error("Goldis.ir error:", e.message);
+          console.error("Daric.gold error:", e);
           return null;
         }
       }
@@ -989,6 +970,7 @@
 </script>
 </body>
 </html>
+
 
 
 
