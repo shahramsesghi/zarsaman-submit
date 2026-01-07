@@ -337,49 +337,52 @@
     }
   }
 },
-    { 
-  name: "Goldis.ir", 
-  company_id: 14,
-  async fetchData() {
-    const cacheKey = "Goldis.ir";
-    const cached = getCachedPrice(cacheKey);
-    if (cached) return cached;
+        {
+      name: "[Goldis.ir](http://Goldis.ir)",
+      company_id: 14,
+      async fetchData() {
+        const cacheKey = "[Goldis.ir](http://Goldis.ir)";
+        const cached = getCachedPrice(cacheKey);
+        if (cached) return cached;
 
-    try {
-      const res = await fetchWithRetry(
-        "https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices"
-      );
+        try {
+          const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
+          if (!res || !res.ok) {
+            console.error("Goldis.ir: پاسخ API ناموفق");
+            return null;
+          }
 
-      if (!res || !res.ok) return null;
+          const json = await res.json();
+          if (!json.success || !json.data) {
+            console.error("Goldis.ir: success false یا data خالی");
+            return null;
+          }
 
-      const json = await res.json();
-      if (!json.success || !json.data) return null;
+          const data = json.data;  // اصلاح اصلی: data = json.data (نه آرایه)
 
-      const data = json.data;
+          // قیمت‌ها به ریال → تبدیل به تومان (/10)
+          const buyToman = Math.round(data.final_buy_price / 10);
+          const sellToman = Math.round(data.final_sell_price / 10);
 
-      // قیمت‌ها ریال → تومان
-      const buyToman = Math.round(data.final_buy_price / 10);
-      const sellToman = Math.round(data.final_sell_price / 10);
+          const result = {
+            buy: normalizePrice(buyToman),
+            sell: normalizePrice(sellToman),
 
-      const result = {
-        buy: normalizePrice(buyToman),
-        sell: normalizePrice(sellToman),
+            // اطلاعات اضافی (اختیاری – برای لاگ بهتر)
+            buy_change_percent: Number(data.buy_percentage_change) || 0,
+            sell_change_percent: Number(data.sell_percentage_change) || 0,
+            last_update_fa: `${data.last_update_date || ''} ${data.last_update_time || ''}`
+          };
 
-        // اطلاعات اضافی برای نمایش
-        buy_change_percent: Number(data.buy_percentage_change) || 0,
-        sell_change_percent: Number(data.sell_percentage_change) || 0,
-        last_update_fa: `${data.last_update_date} ${data.last_update_time}`
-      };
+          setCachedPrice(cacheKey, result, 120);  // کش ۲ دقیقه
+          return result;
 
-      setCachedPrice(cacheKey, result, 120);
-      return result;
-
-    } catch (e) {
-      console.error("Goldis.ir fetch error:", e);
-      return null;
-    }
-  }
-},
+        } catch (e) {
+          console.error("Goldis.ir fetch error:", e);
+          return null;
+        }
+      }
+    },
             { name: "Invi.ir", company_id: 15, async fetchData() {
       const cached = getCachedPrice("Invi.ir");
       if (cached) return cached;
@@ -934,3 +937,4 @@
 </script>
 </body>
 </html>
+
