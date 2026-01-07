@@ -580,7 +580,7 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-      {
+          {
       name: "BazareTala.com",
       company_id: 25,
       async fetchData() {
@@ -598,9 +598,9 @@
           
           const html = await res.text();
           
-          // regex جدید برای متن ساده صفحه (خرید از ما و فروش به ما)
-          const buyMatch = html.match(/خرید هر گرم طلا از ما\s*([\d,]+)\s*تومان/i);
-          const sellMatch = html.match(/فروش هر گرم طلا به ما\s*([\d,]+)\s*تومان/i);
+          // regex انعطاف‌پذیر برای متن صفحه (با فضای اضافی و متن بین)
+          const buyMatch = html.match(/خرید.*هر\s*گرم\s*طلا.*از\s*ما\s*([\d,]+)\s*تومان/i);
+          const sellMatch = html.match(/فروش.*هر\s*گرم\s*طلا.*به\s*ما\s*([\d,]+)\s*تومان/i);
           
           if (!buyMatch || !sellMatch) {
             console.error("BazareTala.com: قیمت match نشد - regex شکست");
@@ -944,6 +944,7 @@
 </script>
 </body>
 </html>
+
 
 
 
