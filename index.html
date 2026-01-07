@@ -589,41 +589,43 @@
     if (cached) return cached;
 
     try {
-      // fetch با هدرهای اختصاصی
       const res = await fetch("https://bazaretala.com/melted-gold-bar", {
         headers: {
           "Accept": "text/html",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Origin": "https://bazaretala.com",
           "Referer": "https://bazaretala.com/"
         }
       });
 
-      console.log("BazareTala content-type:", res.headers.get("content-type")); // تست
+      console.log("BazareTala content-type:", res.headers.get("content-type"));
 
-      if (!res || !res.ok) return null;
+      if (!res || !res.ok) {
+        console.error("BazareTala.com HTTP error:", res?.status);
+        return null;
+      }
 
-      const html = await res.text();
+      const text = await res.text();
+      console.log("BazareTala raw text:", text.substring(0, 200)); // تست اولیه 200 کاراکتر
 
       // استخراج قیمت خرید
-      const buyMatch = html.match(
-        /<span class="goldBuyPrice">\s*([\d,]+)\s*<\/span>/i
-      );
-
+      const buyMatch = text.match(/<span class="goldBuyPrice">\s*([\d,]+)\s*<\/span>/i);
       // استخراج قیمت فروش
-      const sellMatch = html.match(
-        /<span class="goldSellPrice">\s*([\d,]+)\s*<\/span>/i
-      );
+      const sellMatch = text.match(/<span class="goldSellPrice">\s*([\d,]+)\s*<\/span>/i);
 
-      if (!buyMatch || !sellMatch) return null;
+      if (!buyMatch || !sellMatch) {
+        console.error("BazareTala.com: قیمت پیدا نشد");
+        return null;
+      }
 
       const buyToman  = Number(buyMatch[1].replace(/,/g, ""));
       const sellToman = Number(sellMatch[1].replace(/,/g, ""));
 
-      if (
-        isNaN(buyToman) || isNaN(sellToman) ||
-        buyToman <= 0 || sellToman <= 0
-      ) return null;
+      if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
+        console.error("BazareTala.com: قیمت نامعتبر", { buyToman, sellToman });
+        return null;
+      }
 
       const result = {
         buy: normalizePrice(buyToman),
@@ -634,7 +636,7 @@
       return result;
 
     } catch (e) {
-      console.error("BazareTala.com error:", e);
+      console.error("BazareTala.com exception:", e);
       return null;
     }
   }
@@ -951,6 +953,7 @@
 </script>
 </body>
 </html>
+
 
 
 
