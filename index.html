@@ -336,10 +336,9 @@
     }
   }
 },
-   {
-  name: "Goldis.ir",
+   { 
+  name: "Goldis.ir", 
   company_id: 14,
-
   async fetchData() {
     const cacheKey = "Goldis.ir";
     const cached = getCachedPrice(cacheKey);
@@ -355,13 +354,20 @@
       const json = await res.json();
       if (!json.success || !json.data) return null;
 
-      // قیمت‌ها در API بر حسب ریال هستند → تبدیل به تومان
-      const buyToman  = Math.round(json.data.final_buy_price  / 10);
-      const sellToman = Math.round(json.data.final_sell_price / 10);
+      const data = json.data;
+
+      // قیمت‌ها ریال → تومان
+      const buyToman = Math.round(data.final_buy_price / 10);
+      const sellToman = Math.round(data.final_sell_price / 10);
 
       const result = {
         buy: normalizePrice(buyToman),
-        sell: normalizePrice(sellToman)
+        sell: normalizePrice(sellToman),
+
+        // اطلاعات اضافی برای نمایش
+        buy_change_percent: Number(data.buy_percentage_change) || 0,
+        sell_change_percent: Number(data.sell_percentage_change) || 0,
+        last_update_fa: `${data.last_update_date} ${data.last_update_time}`
       };
 
       setCachedPrice(cacheKey, result, 120);
@@ -926,6 +932,7 @@
 </script>
 </body>
 </html>
+
 
 
 
