@@ -551,7 +551,6 @@
     }
   }
 },
-
     { name: "Zaryaalgold.com", company_id: 22, async fetchData() {
       const cached = getCachedPrice("Zaryaalgold.com");
       if (cached) return cached;
@@ -580,7 +579,7 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-                  {
+    {
       name: "BazareTala.com",
       company_id: 25,
       async fetchData() {
@@ -598,9 +597,9 @@
           
           const html = await res.text();
           
-          // regex دقیق با فضای اضافی و عدد با کاما
-          const buyMatch = html.match(/خرید\s*هر\s*گرم\s*طلا\s*از\s*ما\s*([\d,]+)\s*تومان/i);
-          const sellMatch = html.match(/فروش\s*هر\s*گرم\s*طلا\s*به\s*ما\s*([\d,]+)\s*تومان/i);
+          // regex با [\s\S]*? برای فضای اضافی و خط جدید
+          const buyMatch = html.match(/خرید هر گرم طلا از ما[\s\S]*?([\d,]+)\s*تومان/i);
+          const sellMatch = html.match(/فروش هر گرم طلا به ما[\s\S]*?([\d,]+)\s*تومان/i);
           
           if (!buyMatch || !sellMatch) {
             console.error("BazareTala.com: قیمت match نشد - regex شکست");
@@ -944,6 +943,7 @@
 </script>
 </body>
 </html>
+
 
 
 
