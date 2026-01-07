@@ -288,53 +288,48 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-   {
-  name: "Daric.gold",
-  company_id: 13,
-  async fetchData() {
-    const cached = getCachedPrice("Daric.gold");
-    if (cached) return cached;
-
-    try {
-      const res = await fetchWithRetry(
-        "https://apisc.daric.gold/loan/api/v1/User/Collateral/GetGoldlPrice"
-      );
-      if (!res || !res.ok) return null;
-
-      const data = await res.json();
-
-      if (
-        !data ||
-        data.IsSuccess !== true ||
-        !data.Data ||
-        !data.Data.BestBuyPrice ||
-        !data.Data.BestSellPrice
-      ) {
-        return null;
+    {
+      name: "Daric.gold",
+      company_id: 13,
+      async fetchData() {
+        const cached = getCachedPrice("Daric.gold");
+        if (cached) return cached;
+        try {
+          const res = await fetchWithRetry("https://apisc.daric.gold/loan/api/v1/User/Collateral/GetGoldlPrice");
+          if (!res || !res.ok) {
+            console.error("Daric.gold: HTTP error", res?.status);
+            return null;
+          }
+          const data = await res.json();
+          
+          if (!data || !data.IsSuccess || !data.Data || !data.Data.BestBuyPrice || !data.Data.BestSellPrice) {
+            console.error("Daric.gold: داده نامعتبر یا IsSuccess false");
+            return null;
+          }
+          
+          const buyToman = Number(data.Data.BestBuyPrice);
+          const sellToman = Number(data.Data.BestSellPrice);
+          
+          if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
+            console.error("Daric.gold: قیمت نامعتبر", { buyToman, sellToman });
+            return null;
+          }
+          
+          console.log("Daric.gold قیمت خام تومان:", { buyToman, sellToman });  // تست
+          
+          const result = {
+            buy: normalizePrice(buyToman),
+            sell: normalizePrice(sellToman)
+          };
+          
+          setCachedPrice("Daric.gold", result);
+          return result;
+        } catch (e) {
+          console.error("Daric.gold error:", e);
+          return null;
+        }
       }
-
-      const buyToman  = Number(data.Data.BestBuyPrice);
-      const sellToman = Number(data.Data.BestSellPrice);
-
-      if (
-        isNaN(buyToman) || isNaN(sellToman) ||
-        buyToman <= 0 || sellToman <= 0
-      ) return null;
-
-      const result = {
-        buy: normalizePrice(buyToman),
-        sell: normalizePrice(sellToman)
-      };
-
-      setCachedPrice("Daric.gold", result);
-      return result;
-
-    } catch (e) {
-      console.error("Daric.gold error:", e);
-      return null;
-    }
-  }
-},
+    },
             {
       name: "Goldis.ir",
       company_id: 14,
@@ -994,6 +989,7 @@
 </script>
 </body>
 </html>
+
 
 
 
