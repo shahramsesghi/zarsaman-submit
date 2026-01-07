@@ -599,28 +599,29 @@
         }
       });
 
-      console.log("BazareTala content-type:", res.headers.get("content-type"));
-
       if (!res || !res.ok) {
         console.error("BazareTala.com HTTP error:", res?.status);
         return null;
       }
 
       const text = await res.text();
-      console.log("BazareTala raw text:", text.substring(0, 200)); // تست اولیه 200 کاراکتر
 
-      // استخراج قیمت خرید
-      const buyMatch = text.match(/<span class="goldBuyPrice">\s*([\d,]+)\s*<\/span>/i);
-      // استخراج قیمت فروش
-      const sellMatch = text.match(/<span class="goldSellPrice">\s*([\d,]+)\s*<\/span>/i);
+      // تابع تبدیل اعداد فارسی → لاتین و حذف کامای فارسی
+      function persianToEnglishNumber(str) {
+        return str.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+                  .replace(/٬/g, "");
+      }
+
+      const buyMatch  = text.match(/<span class="goldBuyPrice">\s*([\d۰-۹٬]+)\s*<\/span>/i);
+      const sellMatch = text.match(/<span class="goldSellPrice">\s*([\d۰-۹٬]+)\s*<\/span>/i);
 
       if (!buyMatch || !sellMatch) {
         console.error("BazareTala.com: قیمت پیدا نشد");
         return null;
       }
 
-      const buyToman  = Number(buyMatch[1].replace(/,/g, ""));
-      const sellToman = Number(sellMatch[1].replace(/,/g, ""));
+      const buyToman  = Number(persianToEnglishNumber(buyMatch[1]));
+      const sellToman = Number(persianToEnglishNumber(sellMatch[1]));
 
       if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
         console.error("BazareTala.com: قیمت نامعتبر", { buyToman, sellToman });
@@ -953,6 +954,7 @@
 </script>
 </body>
 </html>
+
 
 
 
