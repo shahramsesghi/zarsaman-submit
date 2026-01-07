@@ -492,20 +492,52 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    { name: "Zarpay24", company_id: 21, async fetchData() {
-      const cached = getCachedPrice("Zarpay24");
-      if (cached) return cached;
-      try {
-        const res = await fetchWithRetry("https://zarpay24.com/market/coins/?format=json");
-        if (!res) return null;
-        const data = await res.json();
-        const gold = data.find(i => i.symbol === "GOLD");
-        if (!gold) return null;
-        const result = { buy: normalizePrice(gold.buy_price * 0.99), sell: normalizePrice(gold.sell_price * 1.005) };
-        setCachedPrice("Zarpay24", result);
-        return result;
-      } catch (e) { console.error(e); return null; }
-    }},
+   {
+  name: "Zarpay24",
+  company_id: 21,
+
+  async fetchData() {
+    const cacheKey = "Zarpay24";
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const res = await fetchWithRetry(
+        "https://zarpay24.com/market/coins/?format=json"
+      );
+      if (!res || !res.ok) return null;
+
+      const data = await res.json();
+      if (!Array.isArray(data)) return null;
+
+      const gold = data.find(item => item.symbol === "GOLD");
+      if (!gold) return null;
+
+      const baseBuy  = Number(gold.buy_price);
+      const baseSell = Number(gold.sell_price);
+
+      if (
+        isNaN(baseBuy) || isNaN(baseSell) ||
+        baseBuy <= 0 || baseSell <= 0
+      ) {
+        return null;
+      }
+
+      // اعمال کارمزد واقعی Zarpay24 (±1%)
+      const result = {
+        buy: normalizePrice(baseBuy * 1.01),   // خرید = 1% بیشتر
+        sell: normalizePrice(baseSell * 0.99)  // فروش = 1% کمتر
+      };
+
+      setCachedPrice(cacheKey, result);
+      return result;
+
+    } catch (e) {
+      console.error("Zarpay24 fetch error:", e);
+      return null;
+    }
+  }
+},
     { name: "Zaryaalgold.com", company_id: 22, async fetchData() {
       const cached = getCachedPrice("Zaryaalgold.com");
       if (cached) return cached;
@@ -894,5 +926,6 @@
 </script>
 </body>
 </html>
+
 
 
