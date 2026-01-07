@@ -670,22 +670,32 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-    { name: "goldenfa.ir", company_id: 29, async fetchData() {
-      const cached = getCachedPrice("goldenfa.ir");
-      if (cached) return cached;
-      try {
-        const res = await fetchWithRetry("https://api.goldenfa.ir/v1/market/ticker");
-        if (!res) return null;
-        const data = await res.json();
-        const gram18 = data?.data?.find(item => item.symbol === "gram18");
-        if (!gram18 || !gram18.close || isNaN(gram18.close)) return null;
-        const basePriceToman = Number(gram18.close);
-        if (basePriceToman <= 0) return null;
-        const result = { buy: Math.round(basePriceToman * 1.01), sell: Math.round(basePriceToman * 0.99) };
-        setCachedPrice("goldenfa.ir", result);
-        return result;
-      } catch (e) { console.error(e); return null; }
-    }},
+        {
+      name: "goldenfa.ir",
+      company_id: 29,
+      async fetchData() {
+        const cached = getCachedPrice("goldenfa.ir");
+        if (cached) return cached;
+        try {
+          const res = await fetchWithRetry("https://api.goldenfa.ir/v1/market/ticker");
+          if (!res || !res.ok) return null;
+          const data = await res.json();
+          const gram18 = data?.data?.find(item => item.symbol === "gram18");
+          if (!gram18 || gram18.close === undefined || isNaN(gram18.close)) return null;
+          const basePriceToman = Number(gram18.close);
+          if (basePriceToman <= 0) return null;
+          const result = {
+            buy: Math.round(basePriceToman * 1.01),  // خرید +۱%
+            sell: Math.round(basePriceToman * 0.99)  // فروش -۱%
+          };
+          setCachedPrice("goldenfa.ir", result);
+          return result;
+        } catch (e) {
+          console.error("goldenfa.ir error:", e);
+          return null;
+        }
+      }
+    },
     { name: "Irantt.ir", company_id: 30, async fetchData() {
       const cached = getCachedPrice("Irantt.ir");
       if (cached) return cached;
@@ -953,6 +963,7 @@
 </script>
 </body>
 </html>
+
 
 
 
