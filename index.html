@@ -580,68 +580,58 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-{
-  name: "BazareTala.com",
-  company_id: 25,
-  async fetchData() {
-    const cacheKey = "BazareTala.com";
-    const cached = getCachedPrice(cacheKey);
-    if (cached) return cached;
+    {
+      name: "BazareTala.com",
+      company_id: 25,
+      async fetchData() {
+        const cacheKey = "BazareTala.com";
+        const cached = getCachedPrice(cacheKey);
+        if (cached) return cached;
 
-    try {
-      const res = await fetch("https://bazaretala.com/melted-gold-bar", {
-        headers: {
-          "Accept": "text/html",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Origin": "https://bazaretala.com",
-          "Referer": "https://bazaretala.com/"
+        try {
+          const res = await fetchWithRetry("https://bazaretala.com/melted-gold-bar");
+          
+          if (!res || !res.ok) {
+            console.error("BazareTala.com HTTP error:", res?.status);
+            return null;
+          }
+          
+          const html = await res.text();
+          
+          // regex جدید برای متن ساده صفحه
+          const buyMatch = html.match(/خرید هر گرم طلا.*?([\d,]+)\s*تومان/i);
+          const sellMatch = html.match(/فروش هر گرم طلا.*?([\d,]+)\s*تومان/i);
+          
+          if (!buyMatch || !sellMatch) {
+            console.error("BazareTala.com: قیمت match نشد - regex شکست");
+            console.log("HTML نمونه برای دیباگ:", html.substring(0, 500));  // تست
+            return null;
+          }
+          
+          const buyToman = Number(buyMatch[1].replace(/,/g, ""));
+          const sellToman = Number(sellMatch[1].replace(/,/g, ""));
+          
+          if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
+            console.error("BazareTala.com: قیمت نامعتبر", { buyToman, sellToman });
+            return null;
+          }
+          
+          console.log("BazareTala.com قیمت خام تومان:", { buyToman, sellToman });  // تست
+          
+          const result = {
+            buy: normalizePrice(buyToman),
+            sell: normalizePrice(sellToman)
+          };
+          
+          setCachedPrice(cacheKey, result);
+          return result;
+          
+        } catch (e) {
+          console.error("BazareTala.com exception:", e);
+          return null;
         }
-      });
-
-      if (!res || !res.ok) {
-        console.error("BazareTala.com HTTP error:", res?.status);
-        return null;
       }
-
-      const text = await res.text();
-
-      // تابع تبدیل اعداد فارسی → لاتین و حذف کامای فارسی
-      function persianToEnglishNumber(str) {
-        return str.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
-                  .replace(/٬/g, "");
-      }
-
-      const buyMatch  = text.match(/<span class="goldBuyPrice">\s*([\d۰-۹٬]+)\s*<\/span>/i);
-      const sellMatch = text.match(/<span class="goldSellPrice">\s*([\d۰-۹٬]+)\s*<\/span>/i);
-
-      if (!buyMatch || !sellMatch) {
-        console.error("BazareTala.com: قیمت پیدا نشد");
-        return null;
-      }
-
-      const buyToman  = Number(persianToEnglishNumber(buyMatch[1]));
-      const sellToman = Number(persianToEnglishNumber(sellMatch[1]));
-
-      if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
-        console.error("BazareTala.com: قیمت نامعتبر", { buyToman, sellToman });
-        return null;
-      }
-
-      const result = {
-        buy: normalizePrice(buyToman),
-        sell: normalizePrice(sellToman)
-      };
-
-      setCachedPrice(cacheKey, result);
-      return result;
-
-    } catch (e) {
-      console.error("BazareTala.com exception:", e);
-      return null;
-    }
-  }
-},
+    },
     { name: "Talasea.ir", company_id: 26, async fetchData() {
       const cached = getCachedPrice("Talasea.ir");
       if (cached) return cached;
@@ -954,6 +944,7 @@
 </script>
 </body>
 </html>
+
 
 
 
