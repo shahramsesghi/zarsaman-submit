@@ -742,74 +742,52 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-       {
+    {
       name: "panahcoin.com",
       company_id: 33,
       async fetchData() {
-        const cacheKey = "panahcoin.com";
-        const cached = getCachedPrice(cacheKey);
+        const cached = getCachedPrice("panahcoin.com");
         if (cached) return cached;
-
         try {
           const res = await fetchWithRetry("https://www.panahcoin.com/rates/");
-          
-          if (!res || !res.ok) {
-            console.error("panahcoin.com HTTP error:", res?.status);
-            return null;
-          }
-          
+          if (!res || !res.ok) return null;
           const html = await res.text();
           
-          // تابع تبدیل اعداد فارسی به لاتین + حذف کاما
-          function persianToEnglish(str) {
-            return str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-                      .replace(/,/g, '')  // کاما لاتین
-                      .replace(/٬/g, ''); // کاما فارسی
-          }
-          
-          // پیدا کردن row با "طلای 18 عیار" یا "طلای هجده عیار"
+          // regex بهبودیافته برای ردیف طلا ۱۸ عیار (با فضای اضافی و خط جدید)
           const rowMatch = html.match(/<td[^>]*>\s*طلای\s*(?:18|هجده)\s*عیار\s*<\/td>[\s\S]*?<\/tr>/i);
           if (!rowMatch) {
-            console.error("panahcoin.com: row پیدا نشد");
-            console.log("HTML نمونه برای دیباگ:", html.substring(0, 500));
+            console.error("panahcoin.com: ردیف طلا پیدا نشد");
             return null;
           }
           
           const rowHtml = rowMatch[0];
           
           // استخراج همه shortcode_price
-          const priceMatches = rowHtml.matchAll(/shortcode_price['"]?>\s*([\d,٬]+)\s*</g);
-          const prices = Array.from(priceMatches, m => persianToEnglish(m[1]));
+          const priceMatches = rowHtml.matchAll(/shortcode_price['"]?>\s*([\d,]+)\s*</g);
+          const prices = Array.from(priceMatches, m => m[1]);
           
           if (prices.length < 2) {
             console.error("panahcoin.com: قیمت کافی پیدا نشد", prices);
             return null;
           }
           
-          const buyToman = Number(prices[0]);
-          const sellToman = Number(prices[1]);
+          const buyToman = Number(prices[0].replace(/,/g, ""));
+          const sellToman = Number(prices[1].replace(/,/g, ""));
           
           if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
             console.error("panahcoin.com: قیمت نامعتبر", { buyToman, sellToman });
             return null;
           }
           
-          console.log("panahcoin.com قیمت خام تومان:", { buyToman, sellToman });  // تست
-          
-          const result = {
-            buy: normalizePrice(buyToman),
-            sell: normalizePrice(sellToman)
-          };
-          
-          setCachedPrice(cacheKey, result);
+          const result = { buy: buyToman, sell: sellToman };
+          setCachedPrice("panahcoin.com", result);
           return result;
-          
         } catch (e) {
-          console.error("panahcoin.com exception:", e);
+          console.error("panahcoin.com error:", e);
           return null;
         }
       }
-    }
+    },
   ];
 
   // 🔒 نسخه امن‌سازی شده تابع ارسال با دیباگ کامل
@@ -1010,6 +988,7 @@
 </script>
 </body>
 </html>
+
 
 
 
