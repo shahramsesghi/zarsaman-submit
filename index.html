@@ -39,20 +39,19 @@
   const token = 'tokenKEN253gerw75fsdgesty6udsgseev'; // توکن قدیمی (برای سازگاری)
   const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی جدید
 
-  // 🔄 لیست Proxyهای بهبودیافته (اولویت‌بندی شده - corsproxy.io اول چون کار می‌کنه)
+  // 🔄 لیست Proxyهای بهبودیافته (thingproxy اول – پایدار برای Goldis.ir و بقیه)
   const proxyList = [
-    'https://corsproxy.io/?', // اولویت ۱ - جدید و پایدار (تست شد کار می‌کنه برای Goldis.ir)
-    'https://api.allorigins.win/raw?url=', // اولویت ۲ - جایگزین قوی
-    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۳ - قبلی (مسدود شده)
-    'https://thingproxy.freeboard.io/fetch/', // اولویت ۴ - جایگزین اضافی
-    '' // مستقیم (آخرین)
+    'https://thingproxy.freeboard.io/fetch/', // اولویت ۱ - بهترین فعلی (تست شد کار می‌کنه برای Goldis.ir)
+    'https://corsproxy.io/?', // اولویت ۲
+    'https://api.allorigins.win/raw?url=', // اولویت ۳
+    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۴
+    '' // مستقیم
   ];
 
   let currentProxyIndex = 0;
   let proxyUrl = proxyList[currentProxyIndex];
 
-  console.log('🚀 Proxy فعال:', proxyUrl || 'مستقیم');
-
+  console.log('🚀 Proxy اولیه:', proxyUrl || 'مستقیم');
   function normalizePrice(value, multiply = 1) {
     if (value === null || value === undefined) return null;
     if (typeof value === "string") value = value.replace(/,/g, "").trim();
@@ -336,30 +335,30 @@
     }
   }
 },
-        {
+            {
       name: "Goldis.ir",
       company_id: 14,
       async fetchData() {
+        const cacheKey = "[Goldis.ir](http://Goldis.ir)";
+        const cached = getCachedPrice(cacheKey);
+        if (cached && cached.buy && cached.sell) return cached;  // شرط بهتر cache
+
         try {
-const res = await fetch("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices", {
+          const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices", {
             headers: {
               "Accept": "application/json",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-              "Origin": "https://goldis.ir",
-              "Referer": "https://goldis.ir/"
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
           });
           
-          console.log("Goldis.ir content-type:", res.headers.get("content-type"));  // تست          
-          console.log("Goldis.ir status:", res.status);  // تست
-          if (!res.ok) {
-            console.error("Goldis.ir: status نه OK", res.status);
+          if (!res || !res.ok) {
+            console.error("Goldis.ir: status نه OK", res?.status);
             return null;
           }
           
-          const json = await res.json();
+          console.log("Goldis.ir content-type:", res.headers.get("content-type"));  // تست
           
-          console.log("Goldis.ir JSON نمونه:", json);  // تست
+          const json = await res.json();
           
           if (!json.success || !json.data) {
             console.error("Goldis.ir: success false یا data خالی");
@@ -373,7 +372,13 @@ const res = await fetch("https://goldis.ir/price/api/v1/price/assets/gold18k/fin
           
           console.log("Goldis.ir قیمت خام تومان:", { buyToman, sellToman });  // تست
           
-          return { buy: buyToman, sell: sellToman };  // بدون normalize برای تست
+          const result = {
+            buy: normalizePrice(buyToman),
+            sell: normalizePrice(sellToman)
+          };
+          
+          setCachedPrice(cacheKey, result, 120);
+          return result;
           
         } catch (e) {
           console.error("Goldis.ir error:", e.message);
@@ -935,6 +940,7 @@ const res = await fetch("https://goldis.ir/price/api/v1/price/assets/gold18k/fin
 </script>
 </body>
 </html>
+
 
 
 
