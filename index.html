@@ -580,53 +580,43 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-   {
-  name: "BazareTala.com",
-  company_id: 25,
-  async fetchData() {
-    const cached = getCachedPrice("BazareTala.com");
-    if (cached) return cached;
-
-    try {
-      const res = await fetchWithRetry("https://bazaretala.com/melted-gold-bar");
-      if (!res || !res.ok) return null;
-
-      const html = await res.text();
-
-      // استخراج قیمت خرید
-      const buyMatch = html.match(
-        /<span class="goldBuyPrice">\s*([\d,]+)\s*<\/span>/i
-      );
-
-      // استخراج قیمت فروش
-      const sellMatch = html.match(
-        /<span class="goldSellPrice">\s*([\d,]+)\s*<\/span>/i
-      );
-
-      if (!buyMatch || !sellMatch) return null;
-
-      const buyToman  = Number(buyMatch[1].replace(/,/g, ""));
-      const sellToman = Number(sellMatch[1].replace(/,/g, ""));
-
-      if (
-        isNaN(buyToman) || isNaN(sellToman) ||
-        buyToman <= 0 || sellToman <= 0
-      ) return null;
-
-      const result = {
-        buy: normalizePrice(buyToman),
-        sell: normalizePrice(sellToman)
-      };
-
-      setCachedPrice("BazareTala.com", result);
-      return result;
-
-    } catch (e) {
-      console.error("BazareTala.com error:", e);
-      return null;
-    }
-  }
-},
+      {
+      name: "BazareTala.com",
+      company_id: 25,
+      async fetchData() {
+        try {
+          // تست مستقیم بدون پروکسی و هدر اضافی
+          const res = await fetch("https://bazaretala.com/melted-gold-bar");
+          
+          console.log("BazareTala status:", res.status);  // تست
+          if (!res.ok) {
+            console.error("BazareTala: status نه OK", res.status);
+            return null;
+          }
+          
+          const html = await res.text();
+          
+          const buyMatch = html.match(/<span class="goldBuyPrice">\s*([\d,]+)\s*<\/span>/i);
+          const sellMatch = html.match(/<span class="goldSellPrice">\s*([\d,]+)\s*<\/span>/i);
+          
+          if (!buyMatch || !sellMatch) {
+            console.error("BazareTala: قیمت match نشد");
+            return null;
+          }
+          
+          const buyToman = Number(buyMatch[1].replace(/,/g, ""));
+          const sellToman = Number(sellMatch[1].replace(/,/g, ""));
+          
+          console.log("BazareTala قیمت خام تومان:", { buyToman, sellToman });  // تست
+          
+          return { buy: buyToman, sell: sellToman };  // بدون normalize برای تست
+          
+        } catch (e) {
+          console.error("BazareTala error:", e.message);
+          return null;
+        }
+      }
+    },
     { name: "Talasea.ir", company_id: 26, async fetchData() {
       const cached = getCachedPrice("Talasea.ir");
       if (cached) return cached;
@@ -939,6 +929,7 @@
 </script>
 </body>
 </html>
+
 
 
 
