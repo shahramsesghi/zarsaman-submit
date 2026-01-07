@@ -393,18 +393,52 @@
         return result;
       } catch (e) { console.error("Invi.ir error:", e); return null; }
     }},
-    { name: "MelliGold", company_id: 16, async fetchData() {
-      const cached = getCachedPrice("MelliGold");
-      if (cached) return cached;
-      try {
-        const res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/");
-        if (!res) return null;
-        const data = await res.json();
-        const result = { buy: normalizePrice(data.data.price_buy * 0.995), sell: normalizePrice(data.data.price_sell * 1.005) };
-        setCachedPrice("MelliGold", result);
-        return result;
-      } catch (e) { console.error(e); return null; }
-    }},
+        {
+      name: "MelliGold",
+      company_id: 16,
+      async fetchData() {
+        const cached = getCachedPrice("MelliGold");
+        if (cached) return cached;
+        try {
+          const res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/");
+          if (!res || !res.ok) {
+            console.error("MelliGold: HTTP error", res?.status);
+            return null;
+          }
+          const data = await res.json();
+          
+          if (!data || !data.data || !data.data.price_buy || !data.data.price_sell) {
+            console.error("MelliGold: داده نامعتبر");
+            return null;
+          }
+          
+          const baseBuy = Number(data.data.price_buy);
+          const baseSell = Number(data.data.price_sell);
+          
+          if (isNaN(baseBuy) || isNaN(baseSell) || baseBuy <= 0 || baseSell <= 0) {
+            console.error("MelliGold: قیمت پایه نامعتبر", { baseBuy, baseSell });
+            return null;
+          }
+          
+          // اعمال اسپرد نیم درصد (خرید -۰.۵%, فروش +۰.۵%)
+          const buyToman = Math.round(baseBuy * 0.995);
+          const sellToman = Math.round(baseSell * 1.005);
+          
+          console.log("MelliGold قیمت خام با اسپرد:", { buyToman, sellToman });  // تست
+          
+          const result = {
+            buy: normalizePrice(buyToman),
+            sell: normalizePrice(sellToman)
+          };
+          
+          setCachedPrice("MelliGold", result);
+          return result;
+        } catch (e) {
+          console.error("MelliGold error:", e);
+          return null;
+        }
+      }
+    },
     { name: "Milli.gold", company_id: 17, async fetchData() {
       const cached = getCachedPrice("Milli.gold");
       if (cached) return cached;
@@ -970,6 +1004,7 @@
 </script>
 </body>
 </html>
+
 
 
 
