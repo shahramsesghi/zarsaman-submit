@@ -41,11 +41,12 @@
 
   // 🔄 لیست Proxyهای جایگزین (اولویت‌بندی شده)
   const proxyList = [
-    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۱ - جدیدترین و پایدارترین
-    'https://corsproxy.org/?', // اولویت ۲ - جایگزین مستقیم
-    'https://api.allorigins.win/raw?url=', // اولویت ۳ - جایگزین دیگر
-    'https://cors-anywhere.herokuapp.com/', // اولویت ۴ - قدیمی
-    '' // مستقیم (آخرین راه - اگر سایت CORS داشته باشد)
+    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۱ - بهترین فعلی
+    'https://corsproxy.io/?', // اولویت ۲ - جایگزین قوی
+    'https://api.allorigins.win/raw?url=', // اولویت ۳
+    'https://thingproxy.freeboard.io/fetch/', // اولویت ۴ - جدید و پایدار
+    'https://cors.sh/?', // اولویت ۵ - سریع
+    '' // مستقیم (آخرین)ه باشد)
   ];
 
   let currentProxyIndex = 0;
@@ -336,7 +337,7 @@
     }
   }
 },
-  { 
+    { 
   name: "Goldis.ir", 
   company_id: 14,
   async fetchData() {
@@ -379,6 +380,37 @@
     }
   }
 },
+            { name: "Invi.ir", company_id: 15, async fetchData() {
+      const cached = getCachedPrice("Invi.ir");
+      if (cached) return cached;
+      try {
+        // پویا کردن from/to برای 48 ساعت اخیر
+        const to = Math.floor(Date.now() / 1000);
+        const from = to - (48 * 3600);
+        const url = `https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=${from}&to=${to}&currencyCode=IRR`;
+        
+        const res = await fetchWithRetry(url);
+        if (!res || !res.ok) return null;
+        const data = await res.json();
+        
+        if (!data || !data.h || data.h.length === 0) return null;
+        
+        // آخرین high به ریال per milligram
+        const baseRialMg = parseFloat(data.h[data.h.length - 1]);
+        if (isNaN(baseRialMg) || baseRialMg <= 0) return null;
+        
+        // تبدیل: ریال/mg × 1000 = ریال/gram → /10 = تومان/gram
+        const baseTomanGram = Math.round(baseRialMg * 100);
+        
+        const result = {
+          buy: normalizePrice(baseTomanGram * 0.99),   // خرید ۱% پایین‌تر
+          sell: normalizePrice(baseTomanGram * 1.01)   // فروش ۱% بالاتر
+        };
+        
+        setCachedPrice("Invi.ir", result);
+        return result;
+      } catch (e) { console.error("Invi.ir error:", e); return null; }
+    }},
     { name: "MelliGold", company_id: 16, async fetchData() {
       const cached = getCachedPrice("MelliGold");
       if (cached) return cached;
@@ -513,6 +545,7 @@
     }
   }
 },
+
     { name: "Zaryaalgold.com", company_id: 22, async fetchData() {
       const cached = getCachedPrice("Zaryaalgold.com");
       if (cached) return cached;
@@ -901,9 +934,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
