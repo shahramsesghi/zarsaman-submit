@@ -579,67 +579,200 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-       {
-      name: "BazareTala.com",
-      company_id: 25,
-      async fetchData() {
-        const cacheKey = "BazareTala.com";
-        const cached = getCachedPrice(cacheKey);
-        if (cached) return cached;
+     {
+  name: "BazareTala.com",
+  company_id: 25,
+  async fetchData() {
+    const cacheKey = "BazareTala.com";
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
 
+    try {
+      console.log("BazareTala.com: شروع دریافت...");
+      
+      // 1. ابتدا بدون پروکسی مستقیماً تست کنیم
+      let res;
+      let useProxy = false;
+      
+      try {
+        // تلاش مستقیم
+        res = await fetch("https://bazaretala.com/melted-gold-bar", {
+          headers: {
+            "Accept": "text/html",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept-Language": "en-US,en;q=0.9,fa;q=0.8"
+          },
+          mode: "cors",
+          credentials: "omit"
+        });
+        console.log("BazareTala.com: مستقیم - وضعیت:", res.status);
+      } catch (directError) {
+        console.log("BazareTala.com: مستقیم شکست:", directError.message);
+        useProxy = true;
+      }
+      
+      // 2. اگر مستقیم شکست خورد، با پروکسی‌های مختلف امتحان کنیم
+      const proxies = [
+        "https://api.codetabs.com/v1/proxy/?quest=",
+        "https://corsproxy.io/?",
+        "https://api.allorigins.win/raw?url=",
+        "" // آخرین تلاش مستقیم
+      ];
+      
+      let html = null;
+      
+      for (const proxy of proxies) {
+        if (!useProxy && proxy === "") continue; // اگر مستقیم کار کرد، نیازی نیست
+        if (useProxy && proxy === "") break; // اگر به پروکسی رسیدیم و باز مستقیم، بیخیال
+        
         try {
-          const res = await fetchWithRetry("https://bazaretala.com/melted-gold-bar");
+          const url = proxy ? proxy + encodeURIComponent("https://bazaretala.com/melted-gold-bar") 
+                            : "https://bazaretala.com/melted-gold-bar";
           
-          if (!res || !res.ok) {
-            console.error("BazareTala.com HTTP error:", res?.status);
-            return null;
+          console.log(`BazareTala.com: تلاش با ${proxy ? 'پروکسی' : 'مستقیم'}...`);
+          
+          const proxyRes = await fetch(url, {
+            headers: {
+              "Accept": "text/html",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            signal: AbortSignal.timeout(10000) // 10 ثانیه تایم‌اوت
+          });
+          
+          if (proxyRes.ok) {
+            html = await proxyRes.text();
+            console.log(`BazareTala.com: موفق با ${proxy ? 'پروکسی' : 'مستقیم'} - طول HTML:`, html.length);
+            break;
           }
+        } catch (proxyError) {
+          console.log(`BazareTala.com: پروکسی شکست:`, proxyError.message);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 1000)); // تاخیر بین تلاش‌ها
+      }
+      
+      if (!html) {
+        console.error("BazareTala.com: همه روش‌ها شکست خورد");
+        return null;
+      }
+      
+      // 3. دیباگ HTML
+      console.log("BazareTala.com: نمونه HTML (اول 1000 کاراکتر):", html.substring(0, 1000));
+      console.log("BazareTala.com: نمونه HTML (آخر 1000 کاراکتر):", html.substring(html.length - 1000));
+      
+      // 4. regex‌های مختلف را امتحان کنیم
+      const regexPatterns = [
+        // الگوی اصلی شما
+        { buy: /خرید هر گرم طلا از ما[\s\S]*?([\d,]+)\s*تومان/i, sell: /فروش هر گرم طلا به ما[\s\S]*?([\d,]+)\s*تومان/i },
+        
+        // الگوهای جایگزین
+        { buy: /خرید[\s\S]*?([\d,]+)\s*تومان/i, sell: /فروش[\s\S]*?([\d,]+)\s*تومان/i },
+        { buy: /خرید.*?(\d[\d,]*)\s*تومان/i, sell: /فروش.*?(\d[\d,]*)\s*تومان/i },
+        { buy: /خرید.*?>.*?([\d,]+)/i, sell: /فروش.*?>.*?([\d,]+)/i },
+        
+        // جستجوی هر عدد بزرگ (قیمت طلا معمولاً ۶-۸ رقمی است)
+        { buy: /(\d{6,8}(?:,\d{3})*)/, sell: /(\d{6,8}(?:,\d{3})*)/, note: "جستجوی عمومی اعداد" }
+      ];
+      
+      let buyToman = null;
+      let sellToman = null;
+      
+      for (const pattern of regexPatterns) {
+        console.log(`BazareTala.com: تست الگو: ${pattern.note || pattern.buy}`);
+        
+        const buyMatch = html.match(pattern.buy);
+        const sellMatch = html.match(pattern.sell);
+        
+        if (buyMatch && sellMatch) {
+          console.log("BazareTala.com: الگو موفق - خرید:", buyMatch[1], "فروش:", sellMatch[1]);
           
-          const html = await res.text();
+          buyToman = Number(buyMatch[1].replace(/,/g, ""));
+          sellToman = Number(sellMatch[1].replace(/,/g, ""));
           
-          // تابع تبدیل اعداد فارسی به لاتین + حذف کامای فارسی
-          function persianToEnglish(str) {
-            return str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-                      .replace(/٬/g, '');  // کامای فارسی حذف
+          // اعتبارسنجی
+          if (!isNaN(buyToman) && !isNaN(sellToman) && 
+              buyToman > 1000000 && sellToman > 1000000 && // قیمت منطقی
+              buyToman < 20000000 && sellToman < 20000000) {
+            console.log("BazareTala.com: قیمت‌ها معتبر");
+            break;
+          } else {
+            console.log("BazareTala.com: قیمت‌ها نامعتبر، ادامه جستجو...");
+            buyToman = null;
+            sellToman = null;
           }
-          
-          // regex با [\s\S]*? برای فضای اضافی و خط جدید
-          const buyMatch = html.match(/خرید هر گرم طلا از ما[\s\S]*?([\d٬,]+)\s*تومان/i);
-          const sellMatch = html.match(/فروش هر گرم طلا به ما[\s\S]*?([\d٬,]+)\s*تومان/i);
-          
-          if (!buyMatch || !sellMatch) {
-            console.error("BazareTala.com: قیمت match نشد - regex شکست");
-            console.log("HTML نمونه برای دیباگ:", html.substring(0, 500));  // تست
-            return null;
-          }
-          
-          const buyStr = persianToEnglish(buyMatch[1]);
-          const sellStr = persianToEnglish(sellMatch[1]);
-          
-          const buyToman = Number(buyStr);
-          const sellToman = Number(sellStr);
-          
-          if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
-            console.error("BazareTala.com: قیمت نامعتبر", { buyToman, sellToman });
-            return null;
-          }
-          
-          console.log("BazareTala.com قیمت خام تومان:", { buyToman, sellToman });  // تست
-          
-          const result = {
-            buy: normalizePrice(buyToman),
-            sell: normalizePrice(sellToman)
-          };
-          
-          setCachedPrice(cacheKey, result);
-          return result;
-          
-        } catch (e) {
-          console.error("BazareTala.com exception:", e);
-          return null;
         }
       }
-    },
+      
+      // 5. اگر regex جواب نداد، از parse HTML استفاده کنیم
+      if (!buyToman || !sellToman) {
+        console.log("BazareTala.com: تلاش با DOM parser...");
+        
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          
+          // جستجو در تمام span‌ها و div‌ها
+          const allElements = doc.querySelectorAll('span, div, p, td, li');
+          const priceElements = [];
+          
+          allElements.forEach(el => {
+            const text = el.textContent.trim();
+            if (text.match(/\d[\d,]{6,}/)) { // عدد با حداقل ۷ رقم
+              priceElements.push({
+                element: el.tagName,
+                text: text,
+                parent: el.parentElement?.textContent?.substring(0, 100)
+              });
+            }
+          });
+          
+          console.log("BazareTala.com: عناصر قیمت یافت شده:", priceElements.slice(0, 10));
+          
+          // پیدا کردن قیمت خرید و فروش بر اساس کلمات کلیدی
+          for (const elem of priceElements) {
+            const price = Number(elem.text.replace(/,/g, ""));
+            if (price > 1000000 && price < 20000000) {
+              const context = (elem.parent || elem.text).toLowerCase();
+              
+              if (context.includes('خرید') && !buyToman) {
+                buyToman = price;
+                console.log("BazareTala.com: خرید از DOM:", price);
+              }
+              
+              if (context.includes('فروش') && !sellToman) {
+                sellToman = price;
+                console.log("BazareTala.com: فروش از DOM:", price);
+              }
+            }
+          }
+        } catch (domError) {
+          console.error("BazareTala.com: DOM parser error:", domError);
+        }
+      }
+      
+      // 6. بررسی نهایی
+      if (!buyToman || !sellToman) {
+        console.error("BazareTala.com: هیچ قیمتی یافت نشد");
+        console.log("BazareTala.com: کل HTML برای تحلیل:", html);
+        return null;
+      }
+      
+      console.log("BazareTala.com: قیمت نهایی - خرید:", buyToman, "فروش:", sellToman);
+      
+      const result = {
+        buy: normalizePrice(buyToman),
+        sell: normalizePrice(sellToman)
+      };
+      
+      setCachedPrice(cacheKey, result, 300); // 5 دقیقه cache
+      return result;
+      
+    } catch (e) {
+      console.error("BazareTala.com exception:", e);
+      return null;
+    }
+  }
+},
     { name: "Talasea.ir", company_id: 26, async fetchData() {
       const cached = getCachedPrice("Talasea.ir");
       if (cached) return cached;
@@ -952,6 +1085,7 @@
 </script>
 </body>
 </html>
+
 
 
 
