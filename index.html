@@ -742,7 +742,7 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-       {
+           {
       name: "panahcoin.com",
       company_id: 33,
       async fetchData() {
@@ -753,7 +753,13 @@
           if (!res || !res.ok) return null;
           const html = await res.text();
           
-          // regex بهبودیافته برای ردیف طلا ۱۸ عیار (با فضای اضافی و خط جدید)
+          // تابع تبدیل اعداد فارسی به لاتین + حذف کامای فارسی
+          function persianToEnglish(str) {
+            return str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                      .replace(/٬/g, '');  // کامای فارسی حذف
+          }
+          
+          // regex بهبودیافته برای ردیف طلا ۱۸ عیار
           const rowMatch = html.match(/<td[^>]*>\s*طلای\s*(?:18|هجده)\s*عیار\s*<\/td>[\s\S]*?<\/tr>/i);
           if (!rowMatch) {
             console.error("panahcoin.com: ردیف طلا پیدا نشد");
@@ -762,17 +768,17 @@
           
           const rowHtml = rowMatch[0];
           
-          // استخراج همه shortcode_price
-          const priceMatches = rowHtml.matchAll(/shortcode_price['"]?>\s*([\d,]+)\s*</g);
-          const prices = Array.from(priceMatches, m => m[1]);
+          // استخراج همه shortcode_price (با یا بدون نقل قول)
+          const priceMatches = rowHtml.matchAll(/shortcode_price['"]?>\s*([\d٬,]+)\s*</g);
+          const prices = Array.from(priceMatches, m => persianToEnglish(m[1]));
           
           if (prices.length < 2) {
             console.error("panahcoin.com: قیمت کافی پیدا نشد", prices);
             return null;
           }
           
-          const buyToman = Number(prices[0].replace(/,/g, ""));
-          const sellToman = Number(prices[1].replace(/,/g, ""));
+          const buyToman = Number(prices[0]);
+          const sellToman = Number(prices[1]);
           
           if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
             console.error("panahcoin.com: قیمت نامعتبر", { buyToman, sellToman });
@@ -787,6 +793,7 @@
           return null;
         }
       }
+    }
       ];
 
   // 🔒 نسخه امن‌سازی شده تابع ارسال با دیباگ کامل
@@ -987,6 +994,7 @@
 </script>
 </body>
 </html>
+
 
 
 
