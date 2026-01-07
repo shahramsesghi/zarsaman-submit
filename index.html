@@ -39,14 +39,13 @@
   const token = 'tokenKEN253gerw75fsdgesty6udsgseev'; // توکن قدیمی (برای سازگاری)
   const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, ''); // کلید امنیتی جدید
 
-  // 🔄 لیست Proxyهای جایگزین (اولویت‌بندی شده)
+  // 🔄 لیست Proxyهای بهبودیافته (اولویت‌بندی شده - corsproxy.io اول چون کار می‌کنه)
   const proxyList = [
-    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۱ - بهترین فعلی
-    'https://corsproxy.io/?', // اولویت ۲ - جایگزین قوی
-    'https://api.allorigins.win/raw?url=', // اولویت ۳
-    'https://thingproxy.freeboard.io/fetch/', // اولویت ۴ - جدید و پایدار
-    'https://cors.sh/?', // اولویت ۵ - سریع
-    '' // مستقیم (آخرین)ه باشد)
+    'https://corsproxy.io/?', // اولویت ۱ - جدید و پایدار (تست شد کار می‌کنه برای Goldis.ir)
+    'https://api.allorigins.win/raw?url=', // اولویت ۲ - جایگزین قوی
+    'https://api.codetabs.com/v1/proxy/?quest=', // اولویت ۳ - قبلی (مسدود شده)
+    'https://thingproxy.freeboard.io/fetch/', // اولویت ۴ - جایگزین اضافی
+    '' // مستقیم (آخرین)
   ];
 
   let currentProxyIndex = 0;
@@ -936,6 +935,7 @@ const res = await fetch("https://goldis.ir/price/api/v1/price/assets/gold18k/fin
 </script>
 </body>
 </html>
+
 
 
 
