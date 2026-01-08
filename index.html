@@ -96,7 +96,7 @@
       const res = await fetchWithRetry("https://api.zarminex.ir/function_url/");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.buy / 10), sell: normalizePrice(d.sell / 10) };
+      const r = { raw1: normalizePrice(d.buy / 10), raw2: normalizePrice(d.sell / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldika.ir", company_id: 2, async fetchData() {
@@ -104,7 +104,7 @@
       const res = await fetchWithRetry("https://goldika.ir/api/public/price");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.price.buy / 10), sell: normalizePrice(d.data.price.sell / 10) };
+      const r = { raw1: normalizePrice(d.data.price.buy / 10), raw2: normalizePrice(d.data.price.sell / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talaeshow.com", company_id: 3, async fetchData() {
@@ -113,7 +113,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.data.buy_price.gram;
-      const r = { buy: normalizePrice(base * 1.015), sell: normalizePrice(base * 0.985) };
+      const r = { raw1: normalizePrice(base * 0.985), raw2: normalizePrice(base * 1.015) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Technogold.gold", company_id: 4, async fetchData() {
@@ -122,7 +122,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.results.price;
-      const r = { buy: normalizePrice(base * 1.005), sell: normalizePrice(base * 0.995) };
+      const r = { raw1: normalizePrice(base * 0.995), raw2: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarpaad.com", company_id: 5, async fetchData() {
@@ -130,7 +130,7 @@
       const res = await fetchWithRetry("https://app.zarpaad.com/api/getRate");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.gold.buy_price * 1.01), sell: normalizePrice(d.data.gold.sell_price * 0.99) };
+      const r = { raw1: normalizePrice(d.data.gold.sell_price * 0.99), raw2: normalizePrice(d.data.gold.buy_price * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Taline.ir", company_id: 6, async fetchData() {
@@ -138,7 +138,7 @@
       const res = await fetchWithRetry("https://price.tlyn.ir/api/v1/price");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.prices[0].price.buy * 1000), sell: normalizePrice(d.prices[0].price.sell * 1000) };
+      const r = { raw1: normalizePrice(d.prices[0].price.sell * 1000), raw2: normalizePrice(d.prices[0].price.buy * 1000) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talajet.ir", company_id: 7, async fetchData() {
@@ -147,7 +147,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.response.indicators[0].p / 10;
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Wallgold.ir", company_id: 8, async fetchData() {
@@ -156,7 +156,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.result.price;
-      const r = { buy: normalizePrice(base * 1.005), sell: normalizePrice(base * 0.995) };
+      const r = { raw1: normalizePrice(base * 0.995), raw2: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarafza.com", company_id: 9, async fetchData() {
@@ -164,7 +164,7 @@
       const res = await fetchWithRetry("https://api.zarafza.com/wallets/v1/prices");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.G18.buy.price), sell: normalizePrice(d.data.G18.sell.price) };
+      const r = { raw1: normalizePrice(d.data.G18.sell.price), raw2: normalizePrice(d.data.G18.buy.price) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Hamrahgold.com", company_id: 10, async fetchData() {
@@ -173,7 +173,7 @@
       if (!res) return null;
       const d = await res.json();
       const last = d.list[d.list.length - 1];
-      const r = { buy: normalizePrice(last.buy / 10), sell: normalizePrice(last.sell / 10) };
+      const r = { raw1: normalizePrice(last.buy / 10), raw2: normalizePrice(last.sell / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldnia.com", company_id: 11, async fetchData() {
@@ -182,7 +182,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = Number(d.price);
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Baazar.ir", company_id: 12, async fetchData() {
@@ -190,7 +190,7 @@
       const res = await fetchWithRetry("https://api.baazar.ir/landing/v1/price/DAILY/30");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.buyPrice * 0.1), sell: normalizePrice(d.data.sellPrice * 0.1) };
+      const r = { raw1: normalizePrice(d.data.buyPrice * 0.1), raw2: normalizePrice(d.data.sellPrice * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Daric.gold", company_id: 13, async fetchData() {
@@ -199,7 +199,7 @@
       if (!res || !res.ok) return null;
       const d = await res.json();
       if (!d.IsSuccess || !d.Data) return null;
-      const r = { buy: normalizePrice(d.Data.BestBuyPrice), sell: normalizePrice(d.Data.BestSellPrice) };
+      const r = { raw1: normalizePrice(d.Data.BestSellPrice), raw2: normalizePrice(d.Data.BestBuyPrice) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldis.ir", company_id: 14, async fetchData() {
@@ -207,7 +207,7 @@
       const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.final_buy_price * 0.1), sell: normalizePrice(d.data.final_sell_price * 0.1) };
+      const r = { raw1: normalizePrice(d.data.final_sell_price * 0.1), raw2: normalizePrice(d.data.final_buy_price * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Invi.ir", company_id: 15, async fetchData() {
@@ -220,7 +220,7 @@
       const d = await res.json();
       if (!d.h || d.h.length === 0) return null;
       const base = Math.round(parseFloat(d.h[d.h.length - 1]) * 100);
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "MelliGold", company_id: 16, async fetchData() {
@@ -230,7 +230,7 @@
       if (!res || !res.ok) return null;
       const d = await res.json();
       const base = Number(d.data.price_buy || d.data.price_sell || 0);
-      const r = { buy: normalizePrice(base * 1.005), sell: normalizePrice(base * 0.995) };
+      const r = { raw1: normalizePrice(base * 0.995), raw2: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Milli.gold", company_id: 17, async fetchData() {
@@ -239,7 +239,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.data.price18;
-      const r = { buy: normalizePrice(base * 100.5), sell: normalizePrice(base * 99.5) };
+      const r = { raw1: normalizePrice(base * 99.5), raw2: normalizePrice(base * 100.5) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talano.ir", company_id: 18, async fetchData() {
@@ -247,7 +247,7 @@
       const res = await fetchWithRetry("https://service.talano.ir/api/v1/market/price/");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.buyPrice), sell: normalizePrice(d.sellPrice) };
+      const r = { raw1: normalizePrice(d.buyPrice), raw2: normalizePrice(d.sellPrice) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Digikala.com/wealth", company_id: 19, async fetchData() {
@@ -256,7 +256,7 @@
       if (!res || !res.ok) return null;
       const d = await res.json();
       const base = d.response.indicators[0].p / 10;
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarinex.io", company_id: 20, async fetchData() {
@@ -264,7 +264,7 @@
       const res = await fetchWithRetry("https://api.zarinex.io/wallets/v1/prices");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.G18.buy.instant), sell: normalizePrice(d.data.G18.sell.instant) };
+      const r = { raw1: normalizePrice(d.data.G18.buy.instant), raw2: normalizePrice(d.data.G18.sell.instant) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarpay24", company_id: 21, async fetchData() {
@@ -278,7 +278,7 @@
       const siteBuy = Number(gold.buy_price);
       const siteSell = Number(gold.sell_price);
       if (isNaN(siteBuy) || isNaN(siteSell) || siteBuy <= 0 || siteSell <= 0) return null;
-      const r = { buy: normalizePrice(siteBuy * 0.99), sell: normalizePrice(siteSell * 1.01) };
+      const r = { raw1: normalizePrice(siteSell * 1.01), raw2: normalizePrice(siteBuy * 0.99) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zaryaalgold.com", company_id: 22, async fetchData() {
@@ -287,7 +287,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.geram18.value / 10;
-      const r = { buy: normalizePrice(base * 1.005), sell: normalizePrice(base * 0.995) };
+      const r = { raw1: normalizePrice(base * 0.995), raw2: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Tokeniko.com", company_id: 24, async fetchData() {
@@ -297,7 +297,7 @@
       const d = await res.json();
       const item = d?.Model?.find(i => i.Name === "gold-750" || i.Title?.includes("طلای آبشده"));
       if (!item) return null;
-      const r = { buy: normalizePrice(item.PurchasePrice / 10), sell: normalizePrice(item.SellPrice / 10) };
+      const r = { raw1: normalizePrice(item.SellPrice / 10), raw2: normalizePrice(item.PurchasePrice / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "BazareTala.com", company_id: 25, async fetchData() {
@@ -309,7 +309,7 @@
       const buyM = html.match(/خرید.*طلا.*از\s*ما\s*([\d,٬]+)\s*تومان/i);
       const sellM = html.match(/فروش.*طلا.*به\s*ما\s*([\d,٬]+)\s*تومان/i);
       if (!buyM || !sellM) return null;
-      const r = { buy: normalizePrice(toEn(buyM[1])), sell: normalizePrice(toEn(sellM[1])) };
+      const r = { raw1: normalizePrice(toEn(sellM[1])), raw2: normalizePrice(toEn(buyM[1])) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talasea.ir", company_id: 26, async fetchData() {
@@ -319,7 +319,7 @@
       const d = await res.json();
       const base = Number(d.price);
       if (isNaN(base) || base <= 0) return null;
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "igolden.ir", company_id: 28, async fetchData() {
@@ -328,7 +328,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = Number(d.response.indicators[0].p) / 10;
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "goldenfa.ir", company_id: 29, async fetchData() {
@@ -339,7 +339,7 @@
       const item = d?.data?.find(i => i.symbol === "gram18");
       if (!item) return null;
       const base = Number(item.close);
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Irantt.ir", company_id: 30, async fetchData() {
@@ -348,7 +348,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = Number(d.price.geram18.replace(/,/g, ''));
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "zarline.app", company_id: 31, async fetchData() {
@@ -357,7 +357,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d?.data?.price;
-      const r = { buy: normalizePrice(base * 1.005), sell: normalizePrice(base * 0.995) };
+      const r = { raw1: normalizePrice(base * 0.995), raw2: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "zarniv.ir", company_id: 32, async fetchData() {
@@ -367,7 +367,7 @@
       const d = await res.json();
       if (!d?.prices?.length) return null;
       const base = Number(d.prices[0].Geram18);
-      const r = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const r = { raw1: normalizePrice(base * 0.99), raw2: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "panahcoin.com", company_id: 33, async fetchData() {
@@ -380,7 +380,7 @@
       if (!row) return null;
       const prices = Array.from(row[0].matchAll(/shortcode_price['"]?>\s*([\d,٬]+)\s*</g), m => Number(toEn(m[1])));
       if (prices.length < 2) return null;
-      const r = { buy: normalizePrice(prices[0]), sell: normalizePrice(prices[1]) };
+      const r = { raw1: normalizePrice(prices[1]), raw2: normalizePrice(prices[0]) };
       setCachedPrice(this.name, r); return r;
     }}
   ];
@@ -416,20 +416,19 @@
   async function runTask() {
     for (const api of apis) {
       const data = await api.fetchData();
-      if (data && data.buy != null && data.sell != null) {
-        const a = Number(data.buy);
-        const b = Number(data.sell);
+      if (data && data.raw1 != null && data.raw2 != null) {
+        const a = Number(data.raw1);
+        const b = Number(data.raw2);
         if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) {
           logResult(api.name, null, null, "داده نامعتبر");
           continue;
         }
-        // قاعده ساده و قطعی: عدد بزرگ‌تر = فروش، عدد کوچک‌تر = خرید
-const buy = Math.min(a, b);
-const sell = Math.max(a, b);
-if (a > b) {
-  console.warn(`⚠️ ${api.name}: داده خام برعکس بود → اصلاح شد (خرید کوچک‌تر، فروش بزرگ‌تر)`);
-}
-       
+        // قاعده ساده: عدد کوچک‌تر = خرید، عدد بزرگ‌تر = فروش
+        const buy = Math.min(a, b);
+        const sell = Math.max(a, b);
+        if (a > b) {
+          console.warn(`⚠️ ${api.name}: داده خام برعکس بود → اصلاح شد`);
+        }
         const resp = await sendToDestination(api.company_id, buy, sell);
         logResult(api.name, buy, sell, resp);
       } else {
@@ -444,4 +443,3 @@ if (a > b) {
 </script>
 </body>
 </html>
-
