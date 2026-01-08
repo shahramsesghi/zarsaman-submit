@@ -397,52 +397,25 @@
         return result;
       } catch (e) { console.error("Invi.ir error:", e); return null; }
     }},
-                   {
+                    {
       name: "MelliGold",
       company_id: 16,
       async fetchData() {
         const cached = getCachedPrice("MelliGold");
         if (cached) return cached;
         try {
-          // fetch مستقیم (API CORS نداره اما در بعضی محیط کار می‌کنه)
           let res = await fetch("https://melligold.com/api/v1/exchange/buy-sell-price/");
-          
-          // اگر مستقیم شکست خورد, از fetchWithRetry (پروکسی) استفاده کن
-          if (!res || !res.ok) {
-            console.warn("MelliGold: fetch مستقیم شکست – استفاده از پروکسی");
-            res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/");
-          }
-          
-          if (!res || !res.ok) {
-            console.error("MelliGold: HTTP error", res?.status);
-            return null;
-          }
-          
+          if (!res || !res.ok) res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/");
+          if (!res || !res.ok) return null;
           const data = await res.json();
           
-          if (!data || !data.data || data.data.price_buy === undefined || data.data.price_sell === undefined) {
-            console.error("MelliGold: داده نامعتبر");
-            return null;
-          }
+          const base = Number(data.data.price_buy || data.data.price_sell || 0);
+          if (base <= 0) return null;
           
-          const basePrice = Number(data.data.price_buy);  // price_buy و price_sell معمولاً یکسان هستن
+          const buyToman = Math.round(base * 0.995);
+          const sellToman = Math.round(base * 1.005);
           
-          if (isNaN(basePrice) || basePrice <= 0) {
-            console.error("MelliGold: قیمت پایه نامعتبر", basePrice);
-            return null;
-          }
-          
-          // اعمال اسپرد نیم درصد (خرید -۰.۵%, فروش +۰.۵%)
-          const buyToman = Math.round(basePrice * 0.995);
-          const sellToman = Math.round(basePrice * 1.005);
-          
-          console.log("MelliGold قیمت خام با اسپرد:", { buyToman, sellToman });  // تست
-          
-          const result = {
-            buy: normalizePrice(buyToman),
-            sell: normalizePrice(sellToman)
-          };
-          
+          const result = { buy: normalizePrice(buyToman), sell: normalizePrice(sellToman) };
           setCachedPrice("MelliGold", result);
           return result;
         } catch (e) {
@@ -601,7 +574,7 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-         {
+    {
       name: "BazareTala.com",
       company_id: 25,
       async fetchData() {
@@ -610,34 +583,34 @@
         if (cached) return cached;
 
         try {
-          // استفاده از ابزار browse_page برای گرفتن محتوای صفحه و استخراج قیمت
-          const browseResult = await browse_page("https://bazaretala.com/melted-gold-bar", "قیمت خرید و فروش هر گرم طلا ۱۸ عیار رو استخراج کن – عدد دقیق بدون کاما, مثل 16000000");
-
-          if (!browseResult || !browseResult.buy || !browseResult.sell) {
-            console.error("BazareTala.com: قیمت استخراج نشد از browse_page");
-            return null;
+          const res = await fetchWithRetry("https://bazaretala.com/melted-gold-bar");
+          
+          if (!res || !res.ok) return null;
+          
+          const html = await res.text();
+          
+          // تابع تبدیل اعداد فارسی به لاتین + حذف کاما
+          function persianToEnglish(str) {
+            return str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                      .replace(/[,٬]/g, '');
           }
           
-          const buyToman = Number(browseResult.buy.replace(/,/g, ""));
-          const sellToman = Number(browseResult.sell.replace(/,/g, ""));
+          // regex دقیق برای خرید و فروش
+          const buyMatch = html.match(/خرید.*طلا.*از\s*ما\s*([\d,٬]+)\s*تومان/i);
+          const sellMatch = html.match(/فروش.*طلا.*به\s*ما\s*([\d,٬]+)\s*تومان/i);
           
-          if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
-            console.error("BazareTala.com: قیمت نامعتبر", { buyToman, sellToman });
-            return null;
-          }
+          if (!buyMatch || !sellMatch) return null;
           
-          console.log("BazareTala.com قیمت خام تومان:", { buyToman, sellToman });  // تست
+          const buyToman = Number(persianToEnglish(buyMatch[1]));
+          const sellToman = Number(persianToEnglish(sellMatch[1]));
           
-          const result = {
-            buy: normalizePrice(buyToman),
-            sell: normalizePrice(sellToman)
-          };
+          if (isNaN(buyToman) || isNaN(sellToman)) return null;
           
+          const result = { buy: normalizePrice(buyToman), sell: normalizePrice(sellToman) };
           setCachedPrice(cacheKey, result);
           return result;
-          
         } catch (e) {
-          console.error("BazareTala.com exception:", e);
+          console.error("BazareTala.com error:", e);
           return null;
         }
       }
@@ -671,7 +644,7 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-        {
+    {
       name: "goldenfa.ir",
       company_id: 29,
       async fetchData() {
@@ -682,13 +655,11 @@
           if (!res || !res.ok) return null;
           const data = await res.json();
           const gram18 = data?.data?.find(item => item.symbol === "gram18");
-          if (!gram18 || gram18.close === undefined || isNaN(gram18.close)) return null;
-          const basePriceToman = Number(gram18.close);
-          if (basePriceToman <= 0) return null;
-          const result = {
-            buy: Math.round(basePriceToman * 1.01),  // خرید +۱%
-            sell: Math.round(basePriceToman * 0.99)  // فروش -۱%
-          };
+          if (!gram18 || !gram18.close) return null;
+          const base = Number(gram18.close);
+          const buyToman = Math.round(base * 0.99);
+          const sellToman = Math.round(base * 1.01);
+          const result = { buy: normalizePrice(buyToman), sell: normalizePrice(sellToman) };
           setCachedPrice("goldenfa.ir", result);
           return result;
         } catch (e) {
@@ -743,7 +714,7 @@
         return result;
       } catch (e) { console.error(e); return null; }
     }},
-               {
+                   {
       name: "panahcoin.com",
       company_id: 33,
       async fetchData() {
@@ -754,39 +725,23 @@
           if (!res || !res.ok) return null;
           const html = await res.text();
           
-          // تابع تبدیل اعداد فارسی به لاتین + حذف کامای فارسی
           function persianToEnglish(str) {
             return str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
-                      .replace(/٬/g, '');  // کامای فارسی حذف
+                      .replace(/[,٬]/g, '');
           }
           
-          // regex بهبودیافته برای ردیف طلا ۱۸ عیار
-          const rowMatch = html.match(/<td[^>]*>\s*طلای\s*(?:18|هجده)\s*عیار\s*<\/td>[\s\S]*?<\/tr>/i);
-          if (!rowMatch) {
-            console.error("panahcoin.com: ردیف طلا پیدا نشد");
-            return null;
-          }
+          const rowMatch = html.match(/طلای\s*(?:18|هجده)\s*عیار[\s\S]*?<\/tr>/i);
+          if (!rowMatch) return null;
           
-          const rowHtml = rowMatch[0];
-          
-          // استخراج همه shortcode_price (با یا بدون نقل قول)
-          const priceMatches = rowHtml.matchAll(/shortcode_price['"]?>\s*([\d٬,]+)\s*</g);
+          const priceMatches = rowMatch[0].matchAll(/shortcode_price['"]?>\s*([\d,٬]+)\s*</g);
           const prices = Array.from(priceMatches, m => persianToEnglish(m[1]));
           
-          if (prices.length < 2) {
-            console.error("panahcoin.com: قیمت کافی پیدا نشد", prices);
-            return null;
-          }
+          if (prices.length < 2) return null;
           
           const buyToman = Number(prices[0]);
           const sellToman = Number(prices[1]);
           
-          if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
-            console.error("panahcoin.com: قیمت نامعتبر", { buyToman, sellToman });
-            return null;
-          }
-          
-          const result = { buy: buyToman, sell: sellToman };
+          const result = { buy: normalizePrice(buyToman), sell: normalizePrice(sellToman) };
           setCachedPrice("panahcoin.com", result);
           return result;
         } catch (e) {
@@ -995,6 +950,7 @@
 </script>
 </body>
 </html>
+
 
 
 
