@@ -35,11 +35,9 @@
   </table>
 </div>
 <script>
-  // توکن‌های امنیتی
   const token = 'tokenKEN253gerw75fsdgesty6udsgseev';
   const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, '');
 
-  // لیست پروکسی‌ها
   const proxyList = [
     'https://cors.lol/?url=',
     'https://proxy.cors.sh/?',
@@ -126,39 +124,15 @@
       const base = d.results.price;
       const r = { buy: normalizePrice(base * 1.005), sell: normalizePrice(base * 0.995) };
       setCachedPrice(this.name, r); return r;
-    {
-  name: "Zarpay24",
-  company_id: 21,
-  async fetchData() {
-
-    const c = getCachedPrice(this.name);
-    if (c) return c;
-
-    const res = await fetchWithRetry(
-      "https://zarpay24.com/market/coins/?format=json"
-    );
-    if (!res || !res.ok) return null;
-
-    const d = await res.json();
-    if (!Array.isArray(d)) return null;
-
-    const gold = d.find(item => item.symbol === "GOLD");
-    if (!gold) return null;
-
-    /* قیمت پایه – فقط یکی */
-    const basePrice = Number(gold.buy_price);
-    if (!Number.isFinite(basePrice) || basePrice <= 0) return null;
-
-    const result = {
-      buy:  normalizePrice(basePrice * 1.01),
-      sell: normalizePrice(basePrice * 0.99)
-    };
-
-    setCachedPrice(this.name, result);
-    return result;
-  }
-}
-
+    }},
+    { name: "Zarpaad.com", company_id: 5, async fetchData() {
+      const c = getCachedPrice(this.name); if (c) return c;
+      const res = await fetchWithRetry("https://app.zarpaad.com/api/getRate");
+      if (!res) return null;
+      const d = await res.json();
+      const r = { buy: normalizePrice(d.data.gold.buy_price * 1.01), sell: normalizePrice(d.data.gold.sell_price * 0.99) };
+      setCachedPrice(this.name, r); return r;
+    }},
     { name: "Taline.ir", company_id: 6, async fetchData() {
       const c = getCachedPrice(this.name); if (c) return c;
       const res = await fetchWithRetry("https://price.tlyn.ir/api/v1/price");
@@ -290,7 +264,7 @@
       const res = await fetchWithRetry("https://api.zarinex.io/wallets/v1/prices");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.G18.sell.instant), sell: normalizePrice(d.data.G18.buy.instant) };
+      const r = { buy: normalizePrice(d.data.G18.buy.instant), sell: normalizePrice(d.data.G18.sell.instant) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarpay24", company_id: 21, async fetchData() {
@@ -449,11 +423,11 @@
           logResult(api.name, null, null, "داده نامعتبر");
           continue;
         }
-        // قانون مطلق: خرید = بزرگ‌تر، فروش = کوچک‌تر
-        const buy = Math.max(a, b);
-        const sell = Math.min(a, b);
-        if (a < b) {
-          console.warn(`⚠️ ${api.name} reversed raw data → auto-fixed to buy > sell`);
+        // قاعده ساده و قطعی: عدد بزرگ‌تر = فروش، عدد کوچک‌تر = خرید
+        const buy = Math.min(a, b);
+        const sell = Math.max(a, b);
+        if (a > b) {
+          console.warn(`⚠️ ${api.name}: داده خام برعکس بود → اصلاح شد (خرید کوچک‌تر، فروش بزرگ‌تر)`);
         }
         const resp = await sendToDestination(api.company_id, buy, sell);
         logResult(api.name, buy, sell, resp);
@@ -469,5 +443,3 @@
 </script>
 </body>
 </html>
-
-
