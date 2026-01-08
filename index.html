@@ -89,15 +89,14 @@
     localStorage.setItem(`cache_${name}`, JSON.stringify({ data, timestamp: Date.now() }));
   }
 
-  // 🔥 **قاعده اصلی: num1 همیشه کوچک‌تر (فروش)، num2 همیشه بزرگ‌تر (خرید)**
+  // 🔥 **قاعده اصلی: خرید همیشه بزرگ‌تر، فروش همیشه کوچک‌تر**
   const apis = [
     { name: "Zarminex.ir", company_id: 1, async fetchData() {
       const c = getCachedPrice(this.name); if (c) return c;
       const res = await fetchWithRetry("https://api.zarminex.ir/function_url/");
       if (!res) return null;
       const d = await res.json();
-      // فروش = sell (کوچک‌تر)، خرید = buy (بزرگ‌تر)
-      const r = { num1: normalizePrice(d.sell / 10), num2: normalizePrice(d.buy / 10) };
+      const r = { sell: normalizePrice(d.sell / 10), buy: normalizePrice(d.buy / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldika.ir", company_id: 2, async fetchData() {
@@ -105,10 +104,7 @@
       const res = await fetchWithRetry("https://goldika.ir/api/public/price");
       if (!res) return null;
       const d = await res.json();
-      // فروش باید کوچک‌تر از خرید باشد
-      const buy = normalizePrice(d.data.price.buy / 10);
-      const sell = normalizePrice(d.data.price.sell / 10);
-      const r = { num1: Math.min(buy, sell), num2: Math.max(buy, sell) };
+      const r = { sell: normalizePrice(d.data.price.sell / 10), buy: normalizePrice(d.data.price.buy / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talaeshow.com", company_id: 3, async fetchData() {
@@ -117,8 +113,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.data.buy_price.gram;
-      // num1 کوچک‌تر (فروش)، num2 بزرگ‌تر (خرید)
-      const r = { num1: normalizePrice(base * 0.985), num2: normalizePrice(base * 1.015) };
+      const r = { sell: normalizePrice(base * 0.985), buy: normalizePrice(base * 1.015) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Technogold.gold", company_id: 4, async fetchData() {
@@ -127,7 +122,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.results.price;
-      const r = { num1: normalizePrice(base * 0.995), num2: normalizePrice(base * 1.005) };
+      const r = { sell: normalizePrice(base * 0.995), buy: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarpaad.com", company_id: 5, async fetchData() {
@@ -135,13 +130,7 @@
       const res = await fetchWithRetry("https://app.zarpaad.com/api/getRate");
       if (!res) return null;
       const d = await res.json();
-      // خرید باید بزرگ‌تر باشد، اما سایت ممکن است برعکس بدهد
-      const siteBuy = normalizePrice(d.data.gold.buy_price);
-      const siteSell = normalizePrice(d.data.gold.sell_price);
-      const r = { 
-        num1: Math.min(siteBuy, siteSell), // فروش (کوچک‌تر)
-        num2: Math.max(siteBuy, siteSell)  // خرید (بزرگ‌تر)
-      };
+      const r = { sell: normalizePrice(d.data.gold.sell_price * 0.99), buy: normalizePrice(d.data.gold.buy_price * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Taline.ir", company_id: 6, async fetchData() {
@@ -149,12 +138,7 @@
       const res = await fetchWithRetry("https://price.tlyn.ir/api/v1/price");
       if (!res) return null;
       const d = await res.json();
-      const siteBuy = normalizePrice(d.prices[0].price.buy * 1000);
-      const siteSell = normalizePrice(d.prices[0].price.sell * 1000);
-      const r = { 
-        num1: Math.min(siteBuy, siteSell), 
-        num2: Math.max(siteBuy, siteSell) 
-      };
+      const r = { sell: normalizePrice(d.prices[0].price.sell * 1000), buy: normalizePrice(d.prices[0].price.buy * 1000) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talajet.ir", company_id: 7, async fetchData() {
@@ -163,7 +147,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.response.indicators[0].p / 10;
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Wallgold.ir", company_id: 8, async fetchData() {
@@ -172,7 +156,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.result.price;
-      const r = { num1: normalizePrice(base * 0.995), num2: normalizePrice(base * 1.005) };
+      const r = { sell: normalizePrice(base * 0.995), buy: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarafza.com", company_id: 9, async fetchData() {
@@ -180,11 +164,7 @@
       const res = await fetchWithRetry("https://api.zarafza.com/wallets/v1/prices");
       if (!res) return null;
       const d = await res.json();
-      // فروش = کوچک‌تر، خرید = بزرگ‌تر
-      const r = { 
-        num1: Math.min(d.data.G18.sell.price, d.data.G18.buy.price),
-        num2: Math.max(d.data.G18.sell.price, d.data.G18.buy.price)
-      };
+      const r = { sell: normalizePrice(d.data.G18.sell.price), buy: normalizePrice(d.data.G18.buy.price) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Hamrahgold.com", company_id: 10, async fetchData() {
@@ -193,10 +173,7 @@
       if (!res) return null;
       const d = await res.json();
       const last = d.list[d.list.length - 1];
-      const r = { 
-        num1: Math.min(last.sell / 10, last.buy / 10),
-        num2: Math.max(last.sell / 10, last.buy / 10)
-      };
+      const r = { sell: normalizePrice(last.sell / 10), buy: normalizePrice(last.buy / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldnia.com", company_id: 11, async fetchData() {
@@ -205,7 +182,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = Number(d.price);
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Baazar.ir", company_id: 12, async fetchData() {
@@ -213,12 +190,7 @@
       const res = await fetchWithRetry("https://api.baazar.ir/landing/v1/price/DAILY/30");
       if (!res) return null;
       const d = await res.json();
-      const siteBuy = normalizePrice(d.data.buyPrice * 0.1);
-      const siteSell = normalizePrice(d.data.sellPrice * 0.1);
-      const r = { 
-        num1: Math.min(siteBuy, siteSell),
-        num2: Math.max(siteBuy, siteSell)
-      };
+      const r = { sell: normalizePrice(d.data.sellPrice * 0.1), buy: normalizePrice(d.data.buyPrice * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Daric.gold", company_id: 13, async fetchData() {
@@ -227,10 +199,7 @@
       if (!res || !res.ok) return null;
       const d = await res.json();
       if (!d.IsSuccess || !d.Data) return null;
-      const r = { 
-        num1: Math.min(d.Data.BestBuyPrice, d.Data.BestSellPrice),
-        num2: Math.max(d.Data.BestBuyPrice, d.Data.BestSellPrice)
-      };
+      const r = { sell: normalizePrice(d.Data.BestSellPrice), buy: normalizePrice(d.Data.BestBuyPrice) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldis.ir", company_id: 14, async fetchData() {
@@ -238,12 +207,7 @@
       const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
       if (!res) return null;
       const d = await res.json();
-      const siteBuy = normalizePrice(d.data.final_buy_price * 0.1);
-      const siteSell = normalizePrice(d.data.final_sell_price * 0.1);
-      const r = { 
-        num1: Math.min(siteBuy, siteSell),
-        num2: Math.max(siteBuy, siteSell)
-      };
+      const r = { sell: normalizePrice(d.data.final_sell_price * 0.1), buy: normalizePrice(d.data.final_buy_price * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Invi.ir", company_id: 15, async fetchData() {
@@ -256,7 +220,7 @@
       const d = await res.json();
       if (!d.h || d.h.length === 0) return null;
       const base = Math.round(parseFloat(d.h[d.h.length - 1]) * 100);
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "MelliGold", company_id: 16, async fetchData() {
@@ -265,8 +229,10 @@
       if (!res || !res.ok) res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/");
       if (!res || !res.ok) return null;
       const d = await res.json();
-      const base = Number(d.data.price_buy || d.data.price_sell || 0);
-      const r = { num1: normalizePrice(base * 0.995), num2: normalizePrice(base * 1.005) };
+      // ⚠️ سایت MelliGold داده‌ها را برعکس می‌دهد: price_buy = فروش، price_sell = خرید
+      const buyPrice = Number(d.data.price_sell || 0); // price_sell در واقع خرید است
+      const sellPrice = Number(d.data.price_buy || 0); // price_buy در واقع فروش است
+      const r = { sell: normalizePrice(sellPrice), buy: normalizePrice(buyPrice) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Milli.gold", company_id: 17, async fetchData() {
@@ -275,7 +241,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.data.price18;
-      const r = { num1: normalizePrice(base * 99.5), num2: normalizePrice(base * 100.5) };
+      const r = { sell: normalizePrice(base * 99.5), buy: normalizePrice(base * 100.5) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talano.ir", company_id: 18, async fetchData() {
@@ -283,10 +249,7 @@
       const res = await fetchWithRetry("https://service.talano.ir/api/v1/market/price/");
       if (!res) return null;
       const d = await res.json();
-      const r = { 
-        num1: Math.min(d.sellPrice, d.buyPrice),
-        num2: Math.max(d.sellPrice, d.buyPrice)
-      };
+      const r = { sell: normalizePrice(d.sellPrice), buy: normalizePrice(d.buyPrice) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Digikala.com/wealth", company_id: 19, async fetchData() {
@@ -295,7 +258,7 @@
       if (!res || !res.ok) return null;
       const d = await res.json();
       const base = d.response.indicators[0].p / 10;
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarinex.io", company_id: 20, async fetchData() {
@@ -303,12 +266,7 @@
       const res = await fetchWithRetry("https://api.zarinex.io/wallets/v1/prices");
       if (!res) return null;
       const d = await res.json();
-      const siteBuy = d.data.G18.buy.instant;
-      const siteSell = d.data.G18.sell.instant;
-      const r = { 
-        num1: Math.min(siteBuy, siteSell),
-        num2: Math.max(siteBuy, siteSell)
-      };
+      const r = { sell: normalizePrice(d.data.G18.buy.instant), buy: normalizePrice(d.data.G18.sell.instant) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarpay24", company_id: 21, async fetchData() {
@@ -322,10 +280,10 @@
       const siteBuy = Number(gold.buy_price);
       const siteSell = Number(gold.sell_price);
       if (isNaN(siteBuy) || isNaN(siteSell) || siteBuy <= 0 || siteSell <= 0) return null;
-      const r = { 
-        num1: Math.min(siteBuy, siteSell),
-        num2: Math.max(siteBuy, siteSell)
-      };
+      // ⚠️ Zarpay24 داده‌ها را برعکس می‌دهد: buy_price = فروش، sell_price = خرید
+      const buyPrice = siteSell; // sell_price در واقع خرید است
+      const sellPrice = siteBuy; // buy_price در واقع فروش است
+      const r = { sell: normalizePrice(sellPrice), buy: normalizePrice(buyPrice) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zaryaalgold.com", company_id: 22, async fetchData() {
@@ -334,7 +292,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d.geram18.value / 10;
-      const r = { num1: normalizePrice(base * 0.995), num2: normalizePrice(base * 1.005) };
+      const r = { sell: normalizePrice(base * 0.995), buy: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Tokeniko.com", company_id: 24, async fetchData() {
@@ -344,10 +302,7 @@
       const d = await res.json();
       const item = d?.Model?.find(i => i.Name === "gold-750" || i.Title?.includes("طلای آبشده"));
       if (!item) return null;
-      const r = { 
-        num1: Math.min(item.PurchasePrice / 10, item.SellPrice / 10),
-        num2: Math.max(item.PurchasePrice / 10, item.SellPrice / 10)
-      };
+      const r = { sell: normalizePrice(item.SellPrice / 10), buy: normalizePrice(item.PurchasePrice / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "BazareTala.com", company_id: 25, async fetchData() {
@@ -356,15 +311,20 @@
       if (!res || !res.ok) return null;
       const html = await res.text();
       const toEn = s => s?.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[,٬]/g, '') || '';
-      const buyM = html.match(/خرید.*طلا.*از\s*ما\s*([\d,٬]+)\s*تومان/i);
-      const sellM = html.match(/فروش.*طلا.*به\s*ما\s*([\d,٬]+)\s*تومان/i);
-      if (!buyM || !sellM) return null;
-      const buyPrice = normalizePrice(toEn(buyM[1]));
-      const sellPrice = normalizePrice(toEn(sellM[1]));
-      const r = { 
-        num1: Math.min(buyPrice, sellPrice),
-        num2: Math.max(buyPrice, sellPrice)
-      };
+      
+      // ⚠️ BazareTala.com هم برعکس است:
+      // "خرید طلا از ما" = فروش (ما از شما می‌خریم)
+      // "فروش طلا به ما" = خرید (ما به شما می‌فروشیم)
+      const buyMatch = html.match(/خرید.*طلا.*از\s*ما\s*([\d,٬]+)\s*تومان/i);
+      const sellMatch = html.match(/فروش.*طلا.*به\s*ما\s*([\d,٬]+)\s*تومان/i);
+      
+      if (!buyMatch || !sellMatch) return null;
+      
+      // معکوس کردن: buyMatch = فروش، sellMatch = خرید
+      const buyPrice = normalizePrice(toEn(sellMatch[1])); // فروش به ما = خرید
+      const sellPrice = normalizePrice(toEn(buyMatch[1])); // خرید از ما = فروش
+      
+      const r = { sell: sellPrice, buy: buyPrice };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talasea.ir", company_id: 26, async fetchData() {
@@ -374,7 +334,7 @@
       const d = await res.json();
       const base = Number(d.price);
       if (isNaN(base) || base <= 0) return null;
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "igolden.ir", company_id: 28, async fetchData() {
@@ -383,7 +343,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = Number(d.response.indicators[0].p) / 10;
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "goldenfa.ir", company_id: 29, async fetchData() {
@@ -393,8 +353,18 @@
       const d = await res.json();
       const item = d?.data?.find(i => i.symbol === "gram18");
       if (!item) return null;
-      const base = Number(item.close);
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      
+      // ⚠️ goldenfa.ir هم برعکس است! معمولاً در tickerها:
+      // open = قیمت باز شدن، close = قیمت بسته شدن (خرید)
+      // high = بالا، low = پایین
+      const buyPrice = Number(item.close || item.high || 0);
+      const sellPrice = Number(item.open || item.low || 0);
+      
+      // اگر باز هم خرید کوچک‌تر از فروش بود، معکوس کن
+      const finalBuy = Math.max(buyPrice, sellPrice);
+      const finalSell = Math.min(buyPrice, sellPrice);
+      
+      const r = { sell: normalizePrice(finalSell), buy: normalizePrice(finalBuy) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Irantt.ir", company_id: 30, async fetchData() {
@@ -403,7 +373,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = Number(d.price.geram18.replace(/,/g, ''));
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "zarline.app", company_id: 31, async fetchData() {
@@ -412,7 +382,7 @@
       if (!res) return null;
       const d = await res.json();
       const base = d?.data?.price;
-      const r = { num1: normalizePrice(base * 0.995), num2: normalizePrice(base * 1.005) };
+      const r = { sell: normalizePrice(base * 0.995), buy: normalizePrice(base * 1.005) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "zarniv.ir", company_id: 32, async fetchData() {
@@ -422,7 +392,7 @@
       const d = await res.json();
       if (!d?.prices?.length) return null;
       const base = Number(d.prices[0].Geram18);
-      const r = { num1: normalizePrice(base * 0.99), num2: normalizePrice(base * 1.01) };
+      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "panahcoin.com", company_id: 33, async fetchData() {
@@ -435,10 +405,8 @@
       if (!row) return null;
       const prices = Array.from(row[0].matchAll(/shortcode_price['"]?>\s*([\d,٬]+)\s*</g), m => Number(toEn(m[1])));
       if (prices.length < 2) return null;
-      const r = { 
-        num1: Math.min(prices[0], prices[1]),
-        num2: Math.max(prices[0], prices[1])
-      };
+      // احتمالاً قیمت اول خرید، قیمت دوم فروش
+      const r = { sell: normalizePrice(prices[1]), buy: normalizePrice(prices[0]) };
       setCachedPrice(this.name, r); return r;
     }}
   ];
@@ -476,22 +444,22 @@
     for (const api of apis) {
       try {
         const data = await api.fetchData();
-        if (data && data.num1 != null && data.num2 != null) {
-          const a = Number(data.num1);
-          const b = Number(data.num2);
+        if (data && data.buy != null && data.sell != null) {
+          let buy = Number(data.buy);
+          let sell = Number(data.sell);
           
-          if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) {
+          if (isNaN(buy) || isNaN(sell) || buy <= 0 || sell <= 0) {
             logResult(api.name, null, null, "داده نامعتبر");
             continue;
           }
           
           // 🔥 **قاعده قطعی: خرید همیشه بزرگ‌تر، فروش همیشه کوچک‌تر**
-          const buy = Math.max(a, b);   // خرید = عدد بزرگ‌تر
-          const sell = Math.min(a, b);  // فروش = عدد کوچک‌تر
-          
-          // اگر سایت داده‌ها را برعکس داده باشد، اطلاع بده
-          if (b < a) {
-            console.warn(`⚠️ ${api.name}: سایت داده‌ها را برعکس داده! اصلاح شد.`);
+          // اگر سایت داده‌ها را برعکس داده باشد، اصلاح کن
+          if (buy < sell) {
+            console.warn(`⚠️ ${api.name}: سایت داده‌ها را برعکس داده! (خرید=${buy} < فروش=${sell}) - اصلاح می‌کنم...`);
+            const temp = buy;
+            buy = sell;
+            sell = temp;
           }
           
           console.log(`📤 ${api.name}: خرید=${buy.toLocaleString()}, فروش=${sell.toLocaleString()}`);
