@@ -36,11 +36,9 @@
 </div>
 
 <script>
-  // توکن‌های امنیتی
   const token = 'tokenKEN253gerw75fsdgesty6udsgseev';
   const apiKey = 'ZAR_SAMAN_SUBMIT_2025_SECURE_' + btoa('submit_script_v2').replace(/=/g, '');
 
-  // لیست پروکسی‌ها
   const proxyList = [
     'https://cors.lol/?url=',
     'https://proxy.cors.sh/?',
@@ -60,7 +58,6 @@
   }
 
   async function fetchWithRetry(url, options = {}, retries = 3) {
-    let lastError = null;
     for (let attempt = 0; attempt < retries; attempt++) {
       for (let i = 0; i < proxyList.length; i++) {
         try {
@@ -75,9 +72,7 @@
           });
           if (res.ok) return res;
           if (res.status === 403 || res.status === 429) continue;
-        } catch (e) {
-          lastError = e;
-        }
+        } catch (e) {}
         await new Promise(r => setTimeout(r, 200));
       }
       if (attempt < retries - 1) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
@@ -104,7 +99,7 @@
       const res = await fetchWithRetry("https://api.zarminex.ir/function_url/");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.buy / 10), sell: normalizePrice(d.sell / 10) };
+      const r = { buy: normalizePrice(d.buy / 10), sell: normalizePrice(d.sell / 10) }; // buy سایت > sell
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldika.ir", company_id: 2, async fetchData() {
@@ -112,7 +107,7 @@
       const res = await fetchWithRetry("https://goldika.ir/api/public/price");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.price.sell / 10), sell: normalizePrice(d.data.price.buy / 10) };
+      const r = { buy: normalizePrice(d.data.price.sell / 10), sell: normalizePrice(d.data.price.buy / 10) }; // sell سایت > buy
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talaeshow.com", company_id: 3, async fetchData() {
@@ -172,7 +167,7 @@
       const res = await fetchWithRetry("https://api.zarafza.com/wallets/v1/prices");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.G18.buy.price), sell: normalizePrice(d.data.G18.sell.price) };
+      const r = { buy: normalizePrice(d.data.G18.buy.price), sell: normalizePrice(d.data.G18.sell.price) }; // buy > sell
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Hamrahgold.com", company_id: 10, async fetchData() {
@@ -181,7 +176,7 @@
       if (!res) return null;
       const d = await res.json();
       const last = d.list[d.list.length - 1];
-      const r = { buy: normalizePrice(last.sell / 10), sell: normalizePrice(last.buy / 10) };
+      const r = { buy: normalizePrice(last.buy / 10), sell: normalizePrice(last.sell / 10) }; // اصلاح: buy سایت > sell
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldnia.com", company_id: 11, async fetchData() {
@@ -216,8 +211,8 @@
       if (!res) return null;
       const d = await res.json();
       const r = { 
-        buy: normalizePrice(d.data.final_sell_price * 0.1), 
-        sell: normalizePrice(d.data.final_buy_price * 0.1) 
+        buy: normalizePrice(d.data.final_buy_price * 0.1),   // بالاتر
+        sell: normalizePrice(d.data.final_sell_price * 0.1)  // پایین‌تر
       };
       setCachedPrice(this.name, r); return r;
     }},
@@ -258,7 +253,7 @@
       const res = await fetchWithRetry("https://service.talano.ir/api/v1/market/price/");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.sellPrice), sell: normalizePrice(d.buyPrice) };
+      const r = { buy: normalizePrice(d.buyPrice), sell: normalizePrice(d.sellPrice) }; // buy سایت > sell
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Digikala.com/wealth", company_id: 19, async fetchData() {
@@ -275,7 +270,7 @@
       const res = await fetchWithRetry("https://api.zarinex.io/wallets/v1/prices");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.G18.sell.instant), sell: normalizePrice(d.data.G18.buy.instant) };
+      const r = { buy: normalizePrice(d.data.G18.sell.instant), sell: normalizePrice(d.data.G18.buy.instant) }; // sell.instant > buy.instant
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zarpay24", company_id: 21, async fetchData() {
@@ -290,8 +285,8 @@
       const siteSell = Number(gold.sell_price);  // پایین‌تر
       if (isNaN(siteBuy) || isNaN(siteSell) || siteBuy <= 0 || siteSell <= 0) return null;
       const r = {
-        buy: normalizePrice(siteBuy * 1.01),     // buy بزرگ‌تر
-        sell: normalizePrice(siteSell * 0.99)    // sell کوچک‌تر
+        buy: normalizePrice(siteBuy * 0.99),   // کمی کمتر از سایت → buy بالاتر
+        sell: normalizePrice(siteSell * 1.01)  // کمی بیشتر از سایت → sell پایین‌تر
       };
       setCachedPrice(this.name, r); return r;
     }},
