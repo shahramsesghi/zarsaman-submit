@@ -393,36 +393,44 @@
         return result;
       } catch (e) { console.error("Invi.ir error:", e); return null; }
     }},
-                {
+                   {
       name: "MelliGold",
       company_id: 16,
       async fetchData() {
         const cached = getCachedPrice("MelliGold");
         if (cached) return cached;
         try {
-          const res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/");
+          // fetch مستقیم (API CORS نداره اما در بعضی محیط کار می‌کنه)
+          let res = await fetch("https://melligold.com/api/v1/exchange/buy-sell-price/");
+          
+          // اگر مستقیم شکست خورد, از fetchWithRetry (پروکسی) استفاده کن
+          if (!res || !res.ok) {
+            console.warn("MelliGold: fetch مستقیم شکست – استفاده از پروکسی");
+            res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/");
+          }
+          
           if (!res || !res.ok) {
             console.error("MelliGold: HTTP error", res?.status);
             return null;
           }
+          
           const data = await res.json();
           
-          if (!data || !data.data || !data.data.price_buy || !data.data.price_sell) {
+          if (!data || !data.data || data.data.price_buy === undefined || data.data.price_sell === undefined) {
             console.error("MelliGold: داده نامعتبر");
             return null;
           }
           
-          const baseBuy = Number(data.data.price_buy);
-          const baseSell = Number(data.data.price_sell);
+          const basePrice = Number(data.data.price_buy);  // price_buy و price_sell معمولاً یکسان هستن
           
-          if (isNaN(baseBuy) || isNaN(baseSell) || baseBuy <= 0 || baseSell <= 0) {
-            console.error("MelliGold: قیمت پایه نامعتبر", { baseBuy, baseSell });
+          if (isNaN(basePrice) || basePrice <= 0) {
+            console.error("MelliGold: قیمت پایه نامعتبر", basePrice);
             return null;
           }
           
           // اعمال اسپرد نیم درصد (خرید -۰.۵%, فروش +۰.۵%)
-          const buyToman = Math.round(baseBuy * 0.995);
-          const sellToman = Math.round(baseSell * 1.005);
+          const buyToman = Math.round(basePrice * 0.995);
+          const sellToman = Math.round(basePrice * 1.005);
           
           console.log("MelliGold قیمت خام با اسپرد:", { buyToman, sellToman });  // تست
           
@@ -1004,6 +1012,7 @@
 </script>
 </body>
 </html>
+
 
 
 
