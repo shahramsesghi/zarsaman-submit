@@ -365,6 +365,31 @@
         }
       }
     },
+    { name: "Goldis.ir", company_id: 14, async fetchData() {
+      const cached = getCachedPrice("Goldis.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
+        if (!res) return null;
+        const data = await res.json();
+        const result = { buy: normalizePrice(data.data.final_sell_price * 0.1), sell: normalizePrice(data.data.final_buy_price * 0.1) };
+        setCachedPrice("Goldis.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
+    { name: "Invi.ir", company_id: 15, async fetchData() {
+      const cached = getCachedPrice("Invi.ir");
+      if (cached) return cached;
+      try {
+        const res = await fetchWithRetry("https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=1760003391&to=1760089791&currencyCode=IRR");
+        if (!res) return null;
+        const data = await res.json();
+        const base = data.h[data.h.length - 1];
+        const result = { buy: normalizePrice(base * 99), sell: normalizePrice(base * 101) };
+        setCachedPrice("Invi.ir", result);
+        return result;
+      } catch (e) { console.error(e); return null; }
+    }},
             { name: "Invi.ir", company_id: 15, async fetchData() {
       const cached = getCachedPrice("Invi.ir");
       if (cached) return cached;
@@ -532,8 +557,8 @@
 
       // اعمال کارمزد واقعی Zarpay24 (±1%)
       const result = {
-        buy: normalizePrice(baseBuy * 1.01),   // خرید = 1% بیشتر
-        sell: normalizePrice(baseSell * 0.99)  // فروش = 1% کمتر
+        buy: normalizePrice(baseBuy * 0.99),   // خرید = 1% بیشتر
+        sell: normalizePrice(baseSell * 1.01)  // فروش = 1% کمتر
       };
 
       setCachedPrice(cacheKey, result);
@@ -948,4 +973,3 @@
 </script>
 </body>
 </html>
-
