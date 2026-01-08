@@ -214,12 +214,16 @@
       const result = { buy: normalizePrice(data.Data.BestBuyPrice), sell: normalizePrice(data.Data.BestSellPrice) };
       setCachedPrice(this.name, result); return result;
     }},
-    { name: "Goldis.ir", company_id: 14, async fetchData() {
+{ name: "Goldis.ir", company_id: 14, async fetchData() {
       const cached = getCachedPrice(this.name); if (cached) return cached;
       const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
       if (!res) return null;
       const data = await res.json();
-      const result = { buy: normalizePrice(data.data.final_sell_price * 0.1), sell: normalizePrice(data.data.final_buy_price * 0.1) };
+      // اصلاح: final_sell_price بالاتر است (سایت به کاربر گران‌تر می‌فروشد)
+      const result = { 
+        buy: normalizePrice(data.data.final_sell_price * 0.1),   // بالاتر → buy شما
+        sell: normalizePrice(data.data.final_buy_price * 0.1)    // پایین‌تر → sell شما
+      };
       setCachedPrice(this.name, result); return result;
     }},
     { name: "Invi.ir", company_id: 15, async fetchData() {
@@ -279,20 +283,17 @@
       const result = { buy: normalizePrice(data.data.G18.sell.instant), sell: normalizePrice(data.data.G18.buy.instant) };
       setCachedPrice(this.name, result); return result;
     }},
-    { name: "Zarpay24", company_id: 21, async fetchData() {
+   { name: "Talasea.ir", company_id: 26, async fetchData() {
       const cached = getCachedPrice(this.name); if (cached) return cached;
-      const res = await fetchWithRetry("https://zarpay24.com/market/coins/?format=json");
-      if (!res || !res.ok) return null;
+      const res = await fetchWithRetry("https://api.talasea.ir/api/market/getGoldPrice");
+      if (!res) return null;
       const data = await res.json();
-      if (!Array.isArray(data)) return null;
-      const gold = data.find(item => item.symbol === "GOLD");
-      if (!gold) return null;
-      const siteBuy = Number(gold.buy_price);    // بالاتر
-      const siteSell = Number(gold.sell_price);  // پایین‌تر
-      if (isNaN(siteBuy) || isNaN(siteSell) || siteBuy <= 0 || siteSell <= 0) return null;
-      const result = {
-        buy: normalizePrice(siteBuy * 0.99),     // شما گران‌تر می‌خرید
-        sell: normalizePrice(siteSell * 1.01)    // شما ارزان‌تر می‌فروشید
+      const base = Number(data.price);  // قیمت پایه (احتمالاً هزار تومانی یا مشابه)
+      if (isNaN(base) || base <= 0) return null;
+      // اصلاح: اسپرد ±1% (کارمزد سایت ۱%)
+      const result = { 
+        buy: normalizePrice(base * 1.01),   // buy بالاتر
+        sell: normalizePrice(base * 0.99)   // sell پایین‌تر
       };
       setCachedPrice(this.name, result); return result;
     }},
@@ -336,8 +337,13 @@
       const res = await fetchWithRetry("https://api.talasea.ir/api/market/getGoldPrice");
       if (!res) return null;
       const data = await res.json();
-      const base = Number(data.price);
-      const result = { buy: normalizePrice(base * 1.01), sell: normalizePrice(base * 0.99) };
+      const base = Number(data.price);  // قیمت پایه (احتمالاً هزار تومانی یا مشابه)
+      if (isNaN(base) || base <= 0) return null;
+      // اصلاح: اسپرد ±1% (کارمزد سایت ۱%)
+      const result = { 
+        buy: normalizePrice(base * 1.01),   // buy بالاتر
+        sell: normalizePrice(base * 0.99)   // sell پایین‌تر
+      };
       setCachedPrice(this.name, result); return result;
     }},
     { name: "igolden.ir", company_id: 28, async fetchData() {
