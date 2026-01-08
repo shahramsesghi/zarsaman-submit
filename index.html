@@ -423,12 +423,16 @@
           logResult(api.name, null, null, "داده نامعتبر");
           continue;
         }
-        // قاعده ساده و قطعی: عدد بزرگ‌تر = فروش، عدد کوچک‌تر = خرید
+        
+        // 🔴 قاعده ساده و قطعی: عدد کوچک‌تر = خرید، عدد بزرگ‌تر = فروش
         const buy = Math.min(a, b);
         const sell = Math.max(a, b);
+        
+        // لاگ هشدار اگر داده‌ها برعکس بودند
         if (a > b) {
-          console.warn(`⚠️ ${api.name}: داده خام برعکس بود → اصلاح شد (خرید کوچک‌تر، فروش بزرگ‌تر)`);
+          console.warn(`⚠️ ${api.name}: داده خام برعکس بود → اصلاح شد (خرید:${buy.toLocaleString()}, فروش:${sell.toLocaleString()})`);
         }
+        
         const resp = await sendToDestination(api.company_id, buy, sell);
         logResult(api.name, buy, sell, resp);
       } else {
