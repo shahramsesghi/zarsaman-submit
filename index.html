@@ -557,8 +557,8 @@
 
       // اعمال کارمزد واقعی Zarpay24 (±1%)
       const result = {
-        buy: normalizePrice(baseBuy * 0.99),   // خرید = 1% بیشتر
-        sell: normalizePrice(baseSell * 1.01)  // فروش = 1% کمتر
+        buy: normalizePrice(basesell * 0.99),   // خرید = 1% بیشتر
+        sell: normalizePrice(baseBuy * 1.01)  // فروش = 1% کمتر
       };
 
       setCachedPrice(cacheKey, result);
@@ -973,3 +973,4 @@
 </script>
 </body>
 </html>
+
