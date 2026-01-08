@@ -59,24 +59,19 @@
   }
 
   async function fetchWithRetry(url, options = {}, retries = 3) {
-    let lastError = null;
     for (let attempt = 0; attempt < retries; attempt++) {
-      for (let i = 0; i < proxyList.length; i++) {
+      for (const proxy of proxyList) {
         try {
-          const proxy = proxyList[i];
           const targetUrl = proxy ? proxy + encodeURIComponent(url) : url;
           const res = await fetch(targetUrl, {
             ...options,
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'User-Agent': 'Mozilla/5.0',
               ...(options.headers || {})
             }
           });
           if (res.ok) return res;
-          if (res.status === 403 || res.status === 429) continue;
-        } catch (e) {
-          lastError = e;
-        }
+        } catch {}
         await new Promise(r => setTimeout(r, 200));
       }
       if (attempt < retries - 1) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
@@ -111,7 +106,7 @@
       const res = await fetchWithRetry("https://goldika.ir/api/public/price");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.price.sell / 10), sell: normalizePrice(d.data.price.buy / 10) };
+      const r = { buy: normalizePrice(d.data.price.buy / 10), sell: normalizePrice(d.data.price.sell / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Talaeshow.com", company_id: 3, async fetchData() {
@@ -180,7 +175,7 @@
       if (!res) return null;
       const d = await res.json();
       const last = d.list[d.list.length - 1];
-      const r = { buy: normalizePrice(last.sell / 10), sell: normalizePrice(last.buy / 10) };
+      const r = { buy: normalizePrice(last.buy / 10), sell: normalizePrice(last.sell / 10) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Goldnia.com", company_id: 11, async fetchData() {
@@ -197,7 +192,7 @@
       const res = await fetchWithRetry("https://api.baazar.ir/landing/v1/price/DAILY/30");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.data.sellPrice * 0.1), sell: normalizePrice(d.data.buyPrice * 0.1) };
+      const r = { buy: normalizePrice(d.data.buyPrice * 0.1), sell: normalizePrice(d.data.sellPrice * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Daric.gold", company_id: 13, async fetchData() {
@@ -214,10 +209,7 @@
       const res = await fetchWithRetry("https://goldis.ir/price/api/v1/price/assets/gold18k/final-prices");
       if (!res) return null;
       const d = await res.json();
-      const r = {
-        buy: normalizePrice(d.data.final_buy_price * 0.1),
-        sell: normalizePrice(d.data.final_sell_price * 0.1)
-      };
+      const r = { buy: normalizePrice(d.data.final_buy_price * 0.1), sell: normalizePrice(d.data.final_sell_price * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Invi.ir", company_id: 15, async fetchData() {
@@ -257,7 +249,7 @@
       const res = await fetchWithRetry("https://service.talano.ir/api/v1/market/price/");
       if (!res) return null;
       const d = await res.json();
-      const r = { buy: normalizePrice(d.sellPrice), sell: normalizePrice(d.buyPrice) };
+      const r = { buy: normalizePrice(d.buyPrice), sell: normalizePrice(d.sellPrice) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Digikala.com/wealth", company_id: 19, async fetchData() {
@@ -288,10 +280,7 @@
       const siteBuy = Number(gold.buy_price);
       const siteSell = Number(gold.sell_price);
       if (isNaN(siteBuy) || isNaN(siteSell) || siteBuy <= 0 || siteSell <= 0) return null;
-      const r = {
-        buy: normalizePrice(siteBuy * 0.99),
-        sell: normalizePrice(siteSell * 1.01)
-      };
+      const r = { buy: normalizePrice(siteBuy * 0.99), sell: normalizePrice(siteSell * 1.01) };
       setCachedPrice(this.name, r); return r;
     }},
     { name: "Zaryaalgold.com", company_id: 22, async fetchData() {
@@ -432,14 +421,15 @@
       if (data && data.buy != null && data.sell != null) {
         const a = Number(data.buy);
         const b = Number(data.sell);
-        if (isNaN(a) || isNaN(b)) {
+        if (isNaN(a) || isNaN(b) || a <= 0 || b <= 0) {
           logResult(api.name, null, null, "داده نامعتبر");
           continue;
         }
-        const buy = Math.min(a, b);
-        const sell = Math.max(a, b);
-        if (a > b) {
-          console.warn(`⚠️ ${api.name} reversed input detected → fixed`);
+        // قانون مطلق: خرید = بزرگ‌تر، فروش = کوچک‌تر
+        const buy = Math.max(a, b);
+        const sell = Math.min(a, b);
+        if (a < b) {
+          console.warn(`⚠️ ${api.name} reversed raw data → auto-fixed to buy > sell`);
         }
         const resp = await sendToDestination(api.company_id, buy, sell);
         logResult(api.name, buy, sell, resp);
