@@ -150,8 +150,8 @@
     if (!Number.isFinite(basePrice) || basePrice <= 0) return null;
 
     const result = {
-      buy:  normalizePrice(basePrice * 0.99),
-      sell: normalizePrice(basePrice * 1.01)
+      buy:  normalizePrice(basePrice * 1.01),
+      sell: normalizePrice(basePrice * 0.99)
     };
 
     setCachedPrice(this.name, result);
@@ -469,4 +469,5 @@
 </script>
 </body>
 </html>
+
 
