@@ -52,7 +52,7 @@
   ];
 
   function normalizePrice(value, multiply = 1) {
-    if (!value) return null;
+    if (value === null || value === undefined) return null;
     if (typeof value === "string") value = value.replace(/,/g, "").trim();
     const num = parseFloat(value);
     return isNaN(num) ? null : Math.round(num * multiply);
@@ -420,8 +420,8 @@
     else if (resp?.skipped) { cls = 'warning'; msg = 'تکراری'; }
     else if (typeof resp === 'string') msg = resp;
     tr.innerHTML = `<td>${now}</td><td><strong>${site}</strong></td>
-      <td class="font-mono">${buy ? buy.toLocaleString('fa-IR') : "-"}</td>
-      <td class="font-mono">${sell ? sell.toLocaleString('fa-IR') : "-"}</td>
+      <td class="font-mono">${Number.isFinite(buy) ? buy.toLocaleString('fa-IR') : "-"}</td>
+      <td class="font-mono">${Number.isFinite(sell) ? sell.toLocaleString('fa-IR') : "-"}</td>
       <td class="${cls}">${msg}</td>`;
     tbody.prepend(tr);
   }
@@ -436,10 +436,8 @@
           logResult(api.name, null, null, "داده نامعتبر");
           continue;
         }
-        // 🔒 قانون مطلق زرسامان
         const buy = Math.min(a, b);
         const sell = Math.max(a, b);
-        // لاگ تشخیص سایت‌های برعکس
         if (a > b) {
           console.warn(`⚠️ ${api.name} reversed input detected → fixed`);
         }
