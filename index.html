@@ -210,19 +210,42 @@
       const r = { sell: normalizePrice(d.data.final_sell_price * 0.1), buy: normalizePrice(d.data.final_buy_price * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
-    { name: "Invi.ir", company_id: 15, async fetchData() {
-      const c = getCachedPrice(this.name); if (c) return c;
+   {
+  name: "Invi.ir",
+  company_id: 15,
+  async fetchData() {
+    const cached = getCachedPrice("Invi.ir");
+    if (cached) return cached;
+
+    try {
       const to = Math.floor(Date.now() / 1000);
       const from = to - (48 * 3600);
       const url = `https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=${from}&to=${to}&currencyCode=IRR`;
+
       const res = await fetchWithRetry(url);
       if (!res || !res.ok) return null;
+
       const d = await res.json();
       if (!d.h || d.h.length === 0) return null;
-      const base = Math.round(parseFloat(d.h[d.h.length - 1]) * 100);
-      const r = { sell: normalizePrice(base * 0.99), buy: normalizePrice(base * 1.01) };
-      setCachedPrice(this.name, r); return r;
-    }},
+
+      const lastHigh = parseFloat(d.h[d.h.length - 1]);
+      if (isNaN(lastHigh) || lastHigh <= 0) return null;
+
+      const base = Math.round(lastHigh * 100);
+
+      const r = {
+        buy: normalizePrice(base * 1.01),
+        sell: normalizePrice(base * 0.99)
+      };
+
+      setCachedPrice("Invi.ir", r);
+      return r;
+
+    } catch (e) {
+      console.error("Invi.ir error:", e);
+      return null;
+    }
+  },
     { name: "MelliGold", company_id: 16, async fetchData() {
       const c = getCachedPrice(this.name); if (c) return c;
       let res = await fetch("https://melligold.com/api/v1/exchange/buy-sell-price/");
@@ -487,3 +510,4 @@
 </script>
 </body>
 </html>
+
