@@ -210,37 +210,69 @@
       const r = { sell: normalizePrice(d.data.final_sell_price * 0.1), buy: normalizePrice(d.data.final_buy_price * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
-   {
-  name: "Invi.ir",
-  company_id: 15,
-  async fetchData() {
-    const c = getCachedPrice(this.name); 
-    if (c) return c;
+      {
+      name: "Invi.ir",
+      company_id: 15,
+      async fetchData() {
+        const cacheKey = "Invi.ir";
+        const cached = getCachedPrice(cacheKey);
+        if (cached) return cached;
 
-    const to = Math.floor(Date.now() / 1000);
-    const from = to - (48 * 3600);
-    const url = `https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=1769764782&to=1769851182&currencyCode=IRR`;
+        try {
+          const to = Math.floor(Date.now() / 1000);
+          const from = to - (48 * 3600); // ۴۸ ساعت قبل
+          const url = `https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=${from}&to=${to}&currencyCode=IRR`;
 
-    const res = await fetchWithRetry(url);
-    if (!res || !res.ok) return null;
+          const res = await fetchWithRetry(url);
+          if (!res || !res.ok) {
+            console.error(`Invi.ir → HTTP خطا: ${res?.status}`);
+            return null;
+          }
 
-    const d = await res.json();
-    if (!d.h || d.h.length === 0) return null;
+          const d = await res.json();
 
-    const lastHigh = parseFloat(d.h[d.h.length - 1]);
-    if (isNaN(lastHigh) || lastHigh <= 0) return null;
+          if (!d || !d.h || !Array.isArray(d.h) || d.h.length === 0) {
+            console.error("Invi.ir → آرایه h خالی یا نامعتبر");
+            return null;
+          }
 
-    const base = Math.round(lastHigh * 100);
+          // آخرین high قیمت (به ریال برای هر میلی‌گرم)
+          const lastHighStr = d.h[d.h.length - 1];
+          const lastHigh = parseFloat(lastHighStr);
 
-    const r = {
-      buy: normalizePrice(base * 1.01),
-      sell: normalizePrice(base * 0.99)
-    };
+          if (isNaN(lastHigh) || lastHigh <= 0) {
+            console.error("Invi.ir → قیمت high نامعتبر:", lastHighStr);
+            return null;
+          }
 
-    setCachedPrice(this.name, r);
-    return r;
-  }
-},
+          // تبدیل به تومان برای هر گرم
+          const baseTomanGram = Math.round(lastHigh * 100);
+
+          // اسپرد: خرید +۱٪ (کاربر گران‌تر می‌خره), فروش -۱٪ (کاربر ارزان‌تر می‌فروشه)
+          const buyToman  = Math.round(baseTomanGram * 1.01);
+          const sellToman = Math.round(baseTomanGram * 0.99);
+
+          console.log("Invi.ir قیمت استخراج‌شده:", {
+            baseTomanGram,
+            buyToman,
+            sellToman,
+            lastHigh,
+            timestamp: new Date().toLocaleTimeString('fa-IR')
+          });
+
+          const result = {
+            buy: normalizePrice(buyToman),
+            sell: normalizePrice(sellToman)
+          };
+
+          setCachedPrice(cacheKey, result);
+          return result;
+
+        } catch (e) {
+          console.error("Invi.ir خطا:", e.message || e);
+          return null;
+        }
+      },
     { name: "MelliGold", company_id: 16, async fetchData() {
       const c = getCachedPrice(this.name); if (c) return c;
       let res = await fetch("https://melligold.com/api/v1/exchange/buy-sell-price/");
@@ -505,5 +537,6 @@
 </script>
 </body>
 </html>
+
 
 
