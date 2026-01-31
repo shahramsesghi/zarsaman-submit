@@ -210,7 +210,7 @@
       const r = { sell: normalizePrice(d.data.final_sell_price * 0.1), buy: normalizePrice(d.data.final_buy_price * 0.1) };
       setCachedPrice(this.name, r); return r;
     }},
-      {
+          {
       name: "Invi.ir",
       company_id: 15,
       async fetchData() {
@@ -272,7 +272,7 @@
           console.error("Invi.ir خطا:", e.message || e);
           return null;
         }
-      },
+       },
     { name: "MelliGold", company_id: 16, async fetchData() {
       const c = getCachedPrice(this.name); if (c) return c;
       let res = await fetch("https://melligold.com/api/v1/exchange/buy-sell-price/");
@@ -537,6 +537,7 @@
 </script>
 </body>
 </html>
+
 
 
 
