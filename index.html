@@ -19,6 +19,7 @@
 </head>
 <body>
 <h1>سیستم ارسال خودکار قیمت‌ها - زرسامان</h1>
+<p style="text-align:center;color:#666;">هر ۶۰ ثانیه یک دور کامل • فاصله بین هر سایت حدود ۰٫۸ ثانیه</p>
 <div class="log-container">
   <table id="logTable">
     <thead>
@@ -105,7 +106,6 @@
   }
 
   const apis = [
-    // 1. Zarminex.ir
     {
       name: "Zarminex.ir", company_id: 1,
       async fetchData() {
@@ -122,8 +122,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 2. Goldika.ir
     {
       name: "Goldika.ir", company_id: 2,
       async fetchData() {
@@ -140,8 +138,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 3. Talaeshow.com
     {
       name: "Talaeshow.com", company_id: 3,
       async fetchData() {
@@ -160,27 +156,56 @@
         } catch (e) { console.error(e); return null; }
       }
     },
+   {
+  name: "Technogold.gold",
+  company_id: 4,
+  async fetchData() {
+    const cacheKey = "Technogold.gold";
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
 
-    // 4. Technogold.gold
-    {
-      name: "Technogold.gold", company_id: 4,
-      async fetchData() {
-        const cached = getCachedPrice("Technogold.gold"); if (cached) return cached;
-        try {
-          const res = await fetchWithRetry("https://api2.technogold.gold/customer/tradeables/only-price/1");
-          if (!res || !res.ok) return null;
-          const data = await res.json();
-          if (!data?.sell_price || !data?.buy_price) return null;
-          const result = {
-            buy: normalizePrice(Math.round(Number(data.sell_price))),
-            sell: normalizePrice(Math.round(Number(data.buy_price)))
-          };
-          setCachedPrice("Technogold.gold", result); return result;
-        } catch (e) { console.error(e); return null; }
+    try {
+      const res = await fetchWithRetry("https://api2.technogold.gold/customer/tradeables/only-price/1");
+      if (!res || !res.ok) {
+        console.error("Technogold.gold: HTTP error", res?.status);
+        return null;
       }
-    },
 
-    // 5. Zarpaad.com
+      const data = await res.json();
+
+      // ساختار واقعی: data.results.buy_price و data.results.sell_price
+      const buyPrice  = data?.results?.buy_price ?? data?.buy_price;
+      const sellPrice = data?.results?.sell_price ?? data?.sell_price;
+
+      if (!buyPrice || !sellPrice) {
+        console.error("Technogold.gold: داده ناقص", data);
+        return null;
+      }
+
+      const buyToman  = Math.round(Number(buyPrice));   // خرید کاربر از سایت
+      const sellToman = Math.round(Number(sellPrice));  // فروش کاربر به سایت
+
+      if (isNaN(buyToman) || isNaN(sellToman) || buyToman <= 0 || sellToman <= 0) {
+        console.error("Technogold.gold: قیمت نامعتبر", { buyToman, sellToman });
+        return null;
+      }
+
+      console.log("Technogold.gold قیمت نهایی:", { buyToman, sellToman });
+
+      const result = {
+        buy: normalizePrice(buyToman),
+        sell: normalizePrice(sellToman)
+      };
+
+      setCachedPrice(cacheKey, result);
+      return result;
+
+    } catch (e) {
+      console.error("Technogold.gold error:", e);
+      return null;
+    }
+  }
+},
     {
       name: "Zarpaad.com", company_id: 5,
       async fetchData() {
@@ -200,8 +225,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 6. Taline.ir
     {
       name: "Taline.ir", company_id: 6,
       async fetchData() {
@@ -220,8 +243,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 7. Talajet.ir (از tgju)
     {
       name: "Talajet.ir", company_id: 7,
       async fetchData() {
@@ -241,8 +262,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 8. Wallgold.ir
     {
       name: "Wallgold.ir", company_id: 8,
       async fetchData() {
@@ -261,8 +280,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 9. Zarafza.com
     {
       name: "Zarafza.com", company_id: 9,
       async fetchData() {
@@ -282,8 +299,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 10. Hamrahgold.com (HTML scrape)
     {
       name: "Hamrahgold.com", company_id: 10,
       async fetchData() {
@@ -304,8 +319,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 12. Baazar.ir
     {
       name: "Baazar.ir", company_id: 12,
       async fetchData() {
@@ -322,8 +335,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 13. Daric.gold
     {
       name: "Daric.gold", company_id: 13,
       async fetchData() {
@@ -341,8 +352,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 14. Goldis.ir
     {
       name: "Goldis.ir", company_id: 14,
       async fetchData() {
@@ -359,53 +368,132 @@
         } catch (e) { console.error(e); return null; }
       }
     },
+{
+  name: "Invi.ir",
+  company_id: 15,
+  async fetchData() {
+    const cacheKey = "Invi.ir";
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
 
-    // 15. Invi.ir
-    {
-      name: "Invi.ir", company_id: 15,
-      async fetchData() {
-        const cached = getCachedPrice("Invi.ir"); if (cached) return cached;
-        try {
-          const to = Math.floor(Date.now() / 1000);
-          const from = to - (48 * 3600);
-          const url = `https://invi.ir/apigw/history?symbol=GOLDIRR&resolution=60&from=${from}&to=${to}&currencyCode=IRR`;
-          const res = await fetchWithRetry(url);
-          if (!res || !res.ok) return null;
-          const d = await res.json();
-          if (!d?.h?.length) return null;
-          const lastHigh = parseFloat(d.h[d.h.length - 1]);
-          if (!lastHigh || lastHigh <= 0) return null;
-          const base = Math.round(lastHigh * 100);
-          const result = {
-            buy: normalizePrice(Math.round(base * 1.01)),
-            sell: normalizePrice(Math.round(base * 0.99))
-          };
-          setCachedPrice("Invi.ir", result); return result;
-        } catch (e) { console.error(e); return null; }
+    try {
+      const res = await fetchWithRetry("https://invi.ir/gold-price");
+      if (!res || !res.ok) {
+        console.error("Invi.ir: HTTP error", res?.status);
+        return null;
       }
-    },
 
-    // 16. MelliGold
-    {
-      name: "MelliGold", company_id: 16,
-      async fetchData() {
-        const cached = getCachedPrice("MelliGold"); if (cached) return cached;
-        try {
-          const res = await fetchWithRetry("https://melligold.com/api/v1/exchange/buy-sell-price/?symbol=XAU18&format=json");
-          if (!res || !res.ok) return null;
-          const data = await res.json();
-          const base = Number(data?.data?.price_buy || data?.data?.price_sell);
-          if (!base || base <= 0) return null;
-          const result = {
-            buy: normalizePrice(Math.round(base * 0.995)),
-            sell: normalizePrice(Math.round(base * 1.005))
-          };
-          setCachedPrice("MelliGold", result); return result;
-        } catch (e) { console.error(e); return null; }
+      const html = await res.text();
+
+      // پیدا کردن current_price مربوط به GOLD-IRR
+      // نمونه: "symbol":"GOLD-IRR" ... "current_price":"186860"
+      let currentPrice = null;
+
+      // روش ۱: دقیق‌تر با GOLD-IRR
+      const goldMatch = html.match(/"symbol"\s*:\s*"GOLD-IRR"[\s\S]*?"current_price"\s*:\s*"(\d+)"/i);
+      if (goldMatch) {
+        currentPrice = goldMatch[1];
+      } else {
+        // روش ۲: فقط current_price
+        const simpleMatch = html.match(/"current_price"\s*:\s*"(\d+)"/i);
+        if (simpleMatch) currentPrice = simpleMatch[1];
       }
-    },
 
-    // 18. Talano.ir
+      if (!currentPrice) {
+        console.error("Invi.ir: current_price پیدا نشد");
+        return null;
+      }
+
+      // ضربدر ۱۰۰ برای تبدیل به تومان
+      const baseToman = Math.round(Number(currentPrice) * 100);
+
+      if (!baseToman || baseToman <= 0) {
+        console.error("Invi.ir: قیمت نامعتبر", currentPrice);
+        return null;
+      }
+
+      // اسپرد قبلی: خرید +۱٪ ، فروش -۱٪
+      const buyToman  = Math.round(baseToman * 1.01);
+      const sellToman = Math.round(baseToman * 0.99);
+
+      console.log("Invi.ir قیمت نهایی:", { currentPrice, baseToman, buyToman, sellToman });
+
+      const result = {
+        buy: normalizePrice(buyToman),
+        sell: normalizePrice(sellToman)
+      };
+
+      setCachedPrice(cacheKey, result);
+      return result;
+
+    } catch (e) {
+      console.error("Invi.ir error:", e);
+      return null;
+    }
+  }
+},
+    {
+  name: "MelliGold",
+  company_id: 16,
+  async fetchData() {
+    const cacheKey = "MelliGold";
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const res = await fetchWithRetry(
+        "https://melligold.com/api/v1/exchange/buy-sell-price/?symbol=XAU18&format=json"
+      );
+
+      if (!res || !res.ok) {
+        console.error("MelliGold: HTTP error", res?.status);
+        return null;
+      }
+
+      // اول text بگیریم تا اگر HTML برگشت، json() خطا ندهد
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("MelliGold: پاسخ JSON نیست", text.substring(0, 120));
+        return null;
+      }
+
+      if (!data?.data) {
+        console.error("MelliGold: data خالی است", data);
+        return null;
+      }
+
+      const baseToman = Number(
+        data.data.price_buy || data.data.price_sell || 0
+      );
+
+      if (!baseToman || baseToman <= 0) {
+        console.error("MelliGold: قیمت نامعتبر", data.data);
+        return null;
+      }
+
+      // اسپرد قبلی: خرید × ۰٫۹۹۵ ، فروش × ۱٫۰۰۵
+      const buyToman  = Math.round(baseToman * 0.995);
+      const sellToman = Math.round(baseToman * 1.005);
+
+      console.log("MelliGold قیمت نهایی:", { baseToman, buyToman, sellToman });
+
+      const result = {
+        buy: normalizePrice(buyToman),
+        sell: normalizePrice(sellToman)
+      };
+
+      setCachedPrice(cacheKey, result);
+      return result;
+
+    } catch (e) {
+      console.error("MelliGold error:", e);
+      return null;
+    }
+  }
+},
     {
       name: "Talano.ir", company_id: 18,
       async fetchData() {
@@ -422,8 +510,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 19. Digikala (tgju)
     {
       name: "Digikala.com/wealth", company_id: 19,
       async fetchData() {
@@ -443,28 +529,62 @@
         } catch (e) { console.error(e); return null; }
       }
     },
+  {
+  name: "Zarpay24",
+  company_id: 21,
+  async fetchData() {
+    const cacheKey = "Zarpay24";
+    const cached = getCachedPrice(cacheKey);
+    if (cached) return cached;
 
-    // 21. Zarpay24
-    {
-      name: "Zarpay24", company_id: 21,
-      async fetchData() {
-        const cached = getCachedPrice("Zarpay24"); if (cached) return cached;
-        try {
-          const res = await fetchWithRetry("https://zarpay24.com/market/coins/?format=json");
-          if (!res || !res.ok) return null;
-          const data = await res.json();
-          const gold = Array.isArray(data) ? data.find(i => i.symbol === "GOLD") : null;
-          if (!gold?.buy_price || !gold?.sell_price) return null;
-          const result = {
-            buy: normalizePrice(Math.round(Number(gold.buy_price) * 0.99)),
-            sell: normalizePrice(Math.round(Number(gold.sell_price) * 1.005))
-          };
-          setCachedPrice("Zarpay24", result); return result;
-        } catch (e) { console.error(e); return null; }
+    try {
+      const res = await fetchWithRetry("https://zarpay24.com/price-gold");
+      if (!res || !res.ok) {
+        console.error("Zarpay24: HTTP error", res?.status);
+        return null;
       }
-    },
 
-    // 22. Zaryaalgold.com
+      const html = await res.text();
+
+      // استخراج قیمت بعد از «طلای 18 عیار» و «نرخ لحظه‌ای»
+      let priceMatch =
+        html.match(/طلای\s*18\s*عیار[\s\S]{0,800}?نرخ\s*لحظه‌ای[\s\S]{0,300}?>([\d,٬]+)</i) ||
+        html.match(/نرخ\s*لحظه‌ای[\s\S]{0,300}?>([\d,٬]{7,})</i) ||
+        html.match(/طلای\s*18\s*عیار[\s\S]{0,500}?>([\d,٬]{9,12})</i);
+
+      if (!priceMatch || !priceMatch[1]) {
+        console.error("Zarpay24: قیمت پیدا نشد");
+        return null;
+      }
+
+      // ریال → تومان
+      const rawRial = Number(priceMatch[1].replace(/[٬,]/g, ""));
+      const baseToman = Math.round(rawRial / 10);
+
+      if (!baseToman || baseToman <= 0) {
+        console.error("Zarpay24: قیمت نامعتبر", priceMatch[1]);
+        return null;
+      }
+
+      const buyToman  = Math.round(baseToman * 1.005); // خرید کاربر
+      const sellToman = Math.round(baseToman * 0.99);  // فروش کاربر
+
+      console.log("Zarpay24 قیمت نهایی:", { rawRial, baseToman, buyToman, sellToman });
+
+      const result = {
+        buy: normalizePrice(buyToman),
+        sell: normalizePrice(sellToman)
+      };
+
+      setCachedPrice(cacheKey, result);
+      return result;
+
+    } catch (e) {
+      console.error("Zarpay24 error:", e);
+      return null;
+    }
+  }
+},
     {
       name: "Zaryaalgold.com", company_id: 22,
       async fetchData() {
@@ -483,8 +603,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 24. Tokeniko.com
     {
       name: "Tokeniko.com", company_id: 24,
       async fetchData() {
@@ -503,8 +621,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 25. BazareTala.com
     {
       name: "BazareTala.com", company_id: 25,
       async fetchData() {
@@ -524,8 +640,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 26. Talasea.ir
     {
       name: "Talasea.ir", company_id: 26,
       async fetchData() {
@@ -544,8 +658,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 28. igolden.ir (tgju)
     {
       name: "igolden.ir", company_id: 28,
       async fetchData() {
@@ -565,8 +677,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 29. goldenfa.ir
     {
       name: "goldenfa.ir", company_id: 29,
       async fetchData() {
@@ -586,8 +696,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 30. Irantt.ir
     {
       name: "Irantt.ir", company_id: 30,
       async fetchData() {
@@ -608,8 +716,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 31. zarline.app
     {
       name: "zarline.app", company_id: 31,
       async fetchData() {
@@ -628,8 +734,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 32. zarniv.ir
     {
       name: "zarniv.ir", company_id: 32,
       async fetchData() {
@@ -648,8 +752,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 33. panahcoin.com
     {
       name: "panahcoin.com", company_id: 33,
       async fetchData() {
@@ -669,8 +771,6 @@
         } catch (e) { console.error(e); return null; }
       }
     },
-
-    // 34. Ecogold.ir (جدید)
     {
       name: "Ecogold.ir", company_id: 34,
       async fetchData() {
@@ -695,7 +795,10 @@
       const body = new URLSearchParams({ company_id, buy, sell, token, api_key: apiKey }).toString();
       const response = await fetch("https://zarsaman.ir/admin/zar.php", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Secure-Key": apiKey },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Secure-Key": apiKey
+        },
         body
       });
       const text = await response.text();
@@ -710,19 +813,30 @@
     const tr = document.createElement("tr");
     const now = new Date().toLocaleString('fa-IR');
     let details = '', cls = 'error';
-    if (response?.status === 'success') { details = response.message || 'ذخیره شد'; cls = 'success'; }
-    else if (response?.skipped) { details = response.message || 'تکراری'; cls = 'warning'; }
-    else { details = response?.message || response || 'خطا'; }
-    tr.innerHTML = `<td>${now}</td><td><strong>${site}</strong></td><td class="font-mono">${buy ? buy.toLocaleString('fa-IR') : "-"}</td><td class="font-mono">${sell ? sell.toLocaleString('fa-IR') : "-"}</td><td class="${cls}">${details}</td>`;
+    if (response?.status === 'success') {
+      details = response.message || 'ذخیره شد';
+      cls = response.skipped ? 'warning' : 'success';
+    } else {
+      details = response?.message || response || 'خطا';
+    }
+    tr.innerHTML = `
+      <td>${now}</td>
+      <td><strong>${site}</strong></td>
+      <td class="font-mono">${buy ? buy.toLocaleString('fa-IR') : "-"}</td>
+      <td class="font-mono">${sell ? sell.toLocaleString('fa-IR') : "-"}</td>
+      <td class="${cls}">${details}</td>
+    `;
     tbody.prepend(tr);
   }
 
   async function runTask() {
-    console.log('🚀 شروع ارسال...');
+    console.log('🚀 شروع دور جدید ارسال قیمت‌ها...');
     let ok = 0, err = 0;
+
     for (const api of apis) {
       console.log(`🔄 ${api.name}`);
       const result = await api.fetchData();
+
       if (result) {
         const response = await sendToDestination(api.company_id, result.buy, result.sell);
         logResult(api.name, result.buy, result.sell, response);
@@ -731,14 +845,20 @@
         logResult(api.name, null, null, "خطا در دریافت داده");
         err++;
       }
-      await new Promise(r => setTimeout(r, 500));
+
+      // فاصله بین هر سایت: حدود ۰٫۸ ثانیه
+      await new Promise(r => setTimeout(r, 800));
     }
-    console.log(`📈 خلاصه: ${ok} موفق، ${err} خطا`);
+
+    console.log(`📈 خلاصه دور: ${ok} موفق، ${err} خطا`);
   }
 
-  console.log('🏁 شروع برنامه...');
+  // اجرای اولیه
+  console.log('🏁 شروع برنامه submit (هر ۶۰ ثانیه یک دور کامل)');
   runTask();
-  setInterval(runTask, 30000);
+
+  // هر ۶۰ ثانیه یک دور کامل
+  setInterval(runTask, 60000);
 </script>
 </body>
 </html>
